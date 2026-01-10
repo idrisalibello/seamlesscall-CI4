@@ -1,0 +1,13 @@
+<?php
+namespace App\Modules\Auth\Entities;
+
+use CodeIgniter\Entity\Entity;
+
+class User extends Entity
+{
+    protected $datamap = [];
+    protected $dates = ['created_at','updated_at'];
+    protected $casts = [
+        'id' => 'integer'
+    ];
+}
