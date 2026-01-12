@@ -182,7 +182,7 @@ class AuthController extends BaseController
             'password'       => 'required',
         ];
 
-        if (!$this->validate($rules, $data)) {
+        if (!$this->validate($rules)) {
             return $this->failValidationErrors($this->validator->getErrors());
         }
 
@@ -203,47 +203,55 @@ class AuthController extends BaseController
         ]);
     }
 
-    // AuthController.php
-    public function requestEmailOtp()
+    /**
+     * Handles a request to send a login OTP to a user's email or phone.
+     */
+    public function requestLoginOtp()
     {
         $data = $this->request->getJSON(true);
+        $identifier = $data['identifier'] ?? null;
 
-        if (empty($data['email_or_phone'])) {
-            return $this->failValidationErrors(['email_or_phone' => 'Email or phone is required']);
-        }
-
-        $user = $this->authService->getUserByEmailOrPhone($data['email_or_phone']);
-        if (!$user) {
-            return $this->failNotFound('User not found');
+        if (empty($identifier)) {
+            return $this->failValidationErrors(['identifier' => 'Email or phone number is required']);
         }
 
         try {
-            $this->authService->sendEmailOtp((int)$user['id']);
-            return $this->respond(['status' => 'success', 'message' => 'OTP sent to email']);
+            $channels = $this->authService->sendLoginOtpToAllChannels($identifier);
+            return $this->respond([
+                'status' => 'success',
+                'message' => 'OTP sent successfully',
+                'channels' => $channels
+            ]);
         } catch (\Exception $e) {
             return $this->fail($e->getMessage());
         }
     }
 
-    public function verifyOtp()
+
+    /**
+     * Handles login by verifying an OTP and issuing a JWT.
+     */
+    public function loginWithOtp()
     {
         $data = $this->request->getJSON(true);
+        $identifier = $data['identifier'] ?? null;
+        $otp = $data['otp'] ?? null;
 
-        if (empty($data['email_or_phone']) || empty($data['otp'])) {
+        if (empty($identifier) || empty($otp)) {
             return $this->failValidationErrors([
-                'email_or_phone' => 'Email or phone required',
-                'otp'            => 'OTP required'
+                'identifier' => 'Email or phone number is required',
+                'otp'        => 'OTP is required'
             ]);
         }
 
-        $user = $this->authService->getUserByEmailOrPhone($data['email_or_phone']);
-        if (!$user) {
-            return $this->failNotFound('User not found');
-        }
-
         try {
-            $this->authService->verifyOtp((int)$user['id'], $data['otp']);
-            return $this->respond(['status' => 'success', 'message' => 'OTP verified successfully']);
+            $token = $this->authService->loginWithOtp($identifier, $otp);
+
+            if ($token) {
+                return $this->respond(['status' => 'success', 'token' => $token]);
+            }
+
+            return $this->failUnauthorized('Login failed. The OTP may be invalid or expired.');
         } catch (\Exception $e) {
             return $this->fail($e->getMessage());
         }
