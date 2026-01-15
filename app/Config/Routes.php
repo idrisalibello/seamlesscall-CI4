@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 $routes->get('testotp/send', 'TestEmail::index');
+$routes->post('auth/oauth', 'AuthController::oauth');
 
 require APPPATH.'Modules/Auth/Config/Routes.php';
+require APPPATH.'Modules/Dashboard/Config/Routes.php';
+require APPPATH.'Modules/Admin/Config/Routes.php';
 

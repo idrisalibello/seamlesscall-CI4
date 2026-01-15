@@ -278,6 +278,123 @@ class AuthService
         return $email->send();
     }
 
+    /**
+     * Login or register a user via Google OAuth
+     *
+     * @param array $googleData ['id' => google_user_id, 'email' => email, 'name' => full name]
+     * @return array ['user' => [...], 'token' => string]
+     * @throws \Exception
+     */
+    // public function loginWithGoogle(array $googleData): array
+    // {
+    //     if (empty($googleData['email']) || empty($googleData['id'])) {
+    //         throw new \Exception('Google login requires email and Google ID');
+    //     }
+
+    //     // Check if user already exists by email
+    //     $user = $this->userModel->where('email', $googleData['email'])->first();
+
+    //     if (!$user) {
+    //         // New user: create account without password
+    //         $userData = [
+    //             'name'       => $googleData['name'] ?? 'Unnamed',
+    //             'email'      => $googleData['email'],
+    //             'google_id'  => $googleData['id'],
+    //             'role'       => 'Customer', // default role
+    //             'status'     => 'active',
+    //             'created_at' => date('Y-m-d H:i:s'),
+    //         ];
+
+    //         $id = $this->userModel->insert($userData);
+    //         $user = $this->userModel->find($id);
+    //     } else {
+    //         // Optional: update google_id if missing
+    //         if (empty($user['google_id'])) {
+    //             $this->userModel->update($user['id'], ['google_id' => $googleData['id']]);
+    //             $user['google_id'] = $googleData['id'];
+    //         }
+    //     }
+
+    //     // Prepare response like password login
+    //     $userResponse = [
+    //         'id'    => (int) $user['id'],
+    //         'name'  => (string) $user['name'],
+    //         'email' => (string) $user['email'],
+    //         'phone' => (string) ($user['phone'] ?? null),
+    //         'role'  => (string) $user['role'],
+    //     ];
+
+    //     // Generate JWT using existing logic
+    //     $token = $this->jwt->generateToken([
+    //         'id'   => $userResponse['id'],
+    //         'role' => $userResponse['role'],
+    //     ]);
+
+    //     return [
+    //         'user'  => $userResponse,
+    //         'token' => $token,
+    //     ];
+    // }
+    /**
+     * Login or register a user via Google OAuth
+     *
+     * @param array $googleData ['id' => google_user_id, 'email' => email, 'name' => full name]
+     * @return array ['user' => [...], 'token' => string]
+     * @throws \Exception
+     */
+    public function loginWithGoogle(array $googleData): array
+    {
+        if (empty($googleData['email']) || empty($googleData['id'])) {
+            throw new \Exception('Google login requires email and Google ID');
+        }
+
+        // Check if user already exists by email
+        $user = $this->userModel->where('email', $googleData['email'])->first();
+
+        if (!$user) {
+            // New user: create account without password
+            $userData = [
+                'name'       => $googleData['name'] ?? 'Unnamed',
+                'email'      => $googleData['email'],
+                'google_id'  => $googleData['id'],
+                'role'       => 'Customer', // default role
+                'status'     => 'active',
+                'created_at' => date('Y-m-d H:i:s'),
+            ];
+
+            $id = $this->userModel->insert($userData);
+            $user = $this->userModel->find($id);
+        } else {
+            // Optional: update google_id if missing
+            if (empty($user['google_id'])) {
+                $this->userModel->update($user['id'], ['google_id' => $googleData['id']]);
+                $user['google_id'] = $googleData['id'];
+            }
+        }
+
+        // Prepare response like password login
+        $userResponse = [
+            'id'    => (int) $user['id'],
+            'name'  => (string) $user['name'],
+            'email' => (string) $user['email'],
+            'phone' => (string) ($user['phone'] ?? null),
+            'role'  => (string) $user['role'],
+        ];
+
+        // Generate JWT using existing logic
+        $token = $this->jwt->generateToken([
+            'id'   => $userResponse['id'],
+            'role' => $userResponse['role'],
+        ]);
+
+        return [
+            'user'  => $userResponse,
+            'token' => $token,
+        ];
+    }
+
+
+
     private function _sendWhatsAppOtp(int $userId, string $purpose): bool
     {
         $user = $this->userModel->find($userId);

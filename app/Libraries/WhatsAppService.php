@@ -52,6 +52,7 @@ class WhatsAppService
                     'body' => $message,
                 ]
             );
+            log_message('debug', 'Twilio response: ' . json_encode($message));
             return true;
         } catch (Exception $e) {
             log_message('error', "Twilio WhatsApp sending failed: " . $e->getMessage());
