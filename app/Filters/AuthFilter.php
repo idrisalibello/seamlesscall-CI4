@@ -1,33 +1,52 @@
 <?php
+
 namespace App\Filters;
 
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use CodeIgniter\Filters\FilterInterface;
 use App\Libraries\JWTHandler;
+use Config\Services;
 
 class AuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        $jwt = new JWTHandler();
+        // ✅ Let CORS preflight through unchallenged
+        if ($request->getMethod() === 'options') {
+            return null;
+        }
+
         $header = $request->getHeaderLine('Authorization');
-        if (!$header || !preg_match('/Bearer\s(\S+)/', $header, $matches)) {
-            return service('response')->setStatusCode(401)->setJSON(['error'=>'No token provided']);
+
+        if (!$header || !preg_match('/Bearer\s+(\S+)/', $header, $matches)) {
+            return Services::response()
+                ->setStatusCode(401)
+                ->setJSON(['error' => 'Authorization token missing']);
         }
 
         $token = $matches[1];
+
+        $jwt = new JWTHandler();
         $payload = $jwt->validateToken($token);
+
         if (!$payload) {
-            return service('response')->setStatusCode(401)->setJSON(['error'=>'Invalid token']);
+            return Services::response()
+                ->setStatusCode(401)
+                ->setJSON(['error' => 'Invalid or expired token']);
         }
 
-        // Pass user info to request
-        $request->user = $payload;
+        // Attach user payload using setGlobal to avoid deprecation warning
+        $request->setGlobal('auth_payload', $payload);
+
+        return null;
     }
 
-    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
-    {
-        // no-op
+    public function after(
+        RequestInterface $request,
+        ResponseInterface $response,
+        $arguments = null
+    ) {
+        return $response;
     }
 }

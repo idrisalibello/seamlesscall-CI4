@@ -1,0 +1,33 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Pass Authorization header to PHP, required for API authentication
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle CORS preflight requests directly here to ensure they are always processed
+    # This is critical for the Flutter app to be able to communicate with the API
+    <IfModule mod_headers.c>
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+        Header always set Access-Control-Max-Age "86400"
+    </IfModule>
+
+    # Respond with 204 No Content for all OPTIONS requests and stop further processing
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=204,L]
+
+    # Route all other requests to CodeIgniter's public folder if they are not real files or directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php/$1 [L]
+</IfModule>
+
+<IfModule !mod_rewrite.c>
+    # Fallback for servers that do not have mod_rewrite enabled
+    ErrorDocument 404 /public/index.php
+</IfModule>
+
+# Hide server signature for security
+ServerSignature Off
