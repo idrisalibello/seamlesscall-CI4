@@ -15,17 +15,13 @@ class ServiceController extends BaseController
      */
     public function index($categoryId = null)
     {
-        // Bypass ServiceModel's select to ensure all fields are retrieved
-        $results = $this->db->table('services')
-                            ->where('category_id', $categoryId)
-                            ->get()
-                            ->getResult(); // Get results as objects
+        $model = new ServiceModel();
+        // Explicitly select all fields to ensure category_id is always included
+        $services = $model->select('services.*') 
+                          ->where('category_id', $categoryId)
+                          ->findAll();
 
-        // TEMPORARY DIAGNOSTIC: Dump results to browser to inspect category_id
-        echo "<pre>";
-        var_dump($results);
-        echo "</pre>";
-        die(); // Halt execution to prevent further processing and just show this output
+        return $this->respond(['data' => $services]);
     }
 
     /**

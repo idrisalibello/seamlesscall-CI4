@@ -16,7 +16,10 @@ class AdminController extends BaseController
 {
     use ResponseTrait;
 
-        $user = $this->request->getGlobal('auth_payload');
+    public function getProviderApplications()
+    {
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getProviderApplications: ' . json_encode($user));
 
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
@@ -43,9 +46,12 @@ class AdminController extends BaseController
         if (!$this->validate($rules)) {
             log_message('debug', 'Validation failed: ' . json_encode($this->validator->getErrors()));
             return $this->failValidationErrors($this->validator->getErrors());
-        $adminUser = $this->request->getGlobal('auth_payload');
+        }
 
-        if (!isset($adminUser) || !isset($adminUser->id) || !is_numeric($adminUser->id)) {
+        $adminUser = service('request')->auth_payload;
+        log_message('debug', 'AdminController: Admin user payload for approveOrRejectProvider: ' . json_encode($adminUser));
+
+        if (!$adminUser || !isset($adminUser->id) || !is_numeric($adminUser->id)) {
             log_message('error', 'Admin ID not found or invalid in JWT payload for approval/rejection.');
             return $this->failUnauthorized('Authenticated admin ID is required to perform this action.');
         }
@@ -102,7 +108,8 @@ class AdminController extends BaseController
      */
     public function createAdmin()
     {
-        $adminUser = $this->request->attributes['auth_payload'] ?? null;
+        $adminUser = $this->request->auth_payload ?? null;
+        log_message('debug', 'AdminController: Admin user payload for createAdmin: ' . json_encode($adminUser));
 
         if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Only Admin users can create new admin users.');
@@ -147,7 +154,8 @@ class AdminController extends BaseController
 
     public function getCustomers()
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getCustomers: ' . json_encode($user));
 
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
@@ -161,7 +169,8 @@ class AdminController extends BaseController
 
     public function getUserDetails($userId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getUserDetails: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -178,7 +187,8 @@ class AdminController extends BaseController
 
     public function getUserLedger($userId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getUserLedger: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -191,7 +201,8 @@ class AdminController extends BaseController
 
     public function getUserRefunds($userId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getUserRefunds: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -204,7 +215,8 @@ class AdminController extends BaseController
 
     public function getUserActivityLog($userId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getUserActivityLog: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -217,7 +229,8 @@ class AdminController extends BaseController
 
     public function getProviders()
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getProviders: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -230,7 +243,8 @@ class AdminController extends BaseController
 
     public function getProviderEarnings($providerId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getProviderEarnings: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }
@@ -243,7 +257,8 @@ class AdminController extends BaseController
 
     public function getProviderPayouts($providerId)
     {
-        $user = $this->request->attributes['auth_payload'] ?? null;
+        $user = service('request')->auth_payload;
+        log_message('debug', 'AdminController: User payload for getProviderPayouts: ' . json_encode($user));
         if (!$user || !isset($user->role) || $user->role !== 'Admin') {
             return $this->failUnauthorized('Access denied. Admins only.');
         }

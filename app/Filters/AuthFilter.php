@@ -36,8 +36,10 @@ class AuthFilter implements FilterInterface
                 ->setJSON(['error' => 'Invalid or expired token']);
         }
 
-        // Attach user payload using setGlobal to avoid deprecation warning
-        $request->setGlobal('auth_payload', $payload);
+        log_message('debug', 'AuthFilter Payload: ' . json_encode($payload));
+
+        // Attach user payload to the request object
+        $request->auth_payload = $payload;
 
         return null;
     }

@@ -17,20 +17,15 @@ $routes->group('api/v1/admin', [
     $routes->get('providers/(:num)/earnings', 'AdminController::getProviderEarnings/$1');
     $routes->get('providers/(:num)/payouts', 'AdminController::getProviderPayouts/$1');
 
-    // Routes for Categories (still auth protected)
+    // Services GET route (moved before categories resource for correct precedence)
+    $routes->get('categories/(:num)/services', 'ServiceController::index/$1');
+
+    // Routes for Categories (moved after specific service route)
     $routes->resource('categories', ['controller' => 'CategoryController']);
 
-    // Services GET route - TEMPORARILY UNFILTERED FOR DIAGNOSIS
-    $routes->get('categories/(:num)/services', 'ServiceController::index/$1', ['filter' => '']); 
-
-    // Services POST, PUT, DELETE routes (still auth protected)
+    // Services POST, PUT, DELETE routes (these are for individual service management)
     $routes->post('categories/(:num)/services', 'ServiceController::create/$1');
     $routes->put('services/(:num)', 'ServiceController::update/$1');
     $routes->delete('services/(:num)', 'ServiceController::delete/$1');
 });
-
-// REMOVING TEMPORARY DIAGNOSTIC GROUP
-// $routes->group('api/v1/admin', ['namespace' => 'App\Modules\Admin\Controllers'], function ($routes) {
-//     $routes->get('categories/(:num)/services', 'ServiceController::index/$1');
-// });
 
