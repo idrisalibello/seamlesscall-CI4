@@ -15,6 +15,7 @@ class UserModel extends Model
         'phone',
         'password',
         'role',
+        'status',
         'provider',
         'provider_id',
         'is_provider',

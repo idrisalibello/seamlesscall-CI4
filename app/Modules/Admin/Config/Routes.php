@@ -27,5 +27,11 @@ $routes->group('api/v1/admin', [
     $routes->post('categories/(:num)/services', 'ServiceController::create/$1');
     $routes->put('services/(:num)', 'ServiceController::update/$1');
     $routes->delete('services/(:num)', 'ServiceController::delete/$1');
+
+    // User Management (for Roles & Permissions)
+    $routes->get('users', 'AdminController::getUsers');
+    $routes->put('users/(:num)', 'AdminController::updateUser/$1');
+    $routes->get('users/(:num)/roles', 'AdminController::getUserRoles/$1');
+    $routes->put('users/(:num)/roles', 'AdminController::updateUserRoles/$1');
 });
 

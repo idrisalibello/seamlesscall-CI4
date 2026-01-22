@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 17, 2026 at 02:15 PM
+-- Generation Time: Jan 18, 2026 at 02:57 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -59,6 +59,16 @@ CREATE TABLE `categories` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`id`, `name`, `description`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'plumbing', 'hhhhh', 'active', '2026-01-17 16:16:08', '2026-01-17 16:16:08'),
+(2, 'electrical', 'ljiojioji', 'active', '2026-01-17 16:16:08', '2026-01-17 19:36:52'),
+(3, 'Carpentary', 'bgsgs', 'active', '2026-01-17 16:34:37', '2026-01-17 16:34:37'),
+(4, 'Cleaning Services', 'Offices and homes', 'active', '2026-01-17 20:00:06', '2026-01-18 06:29:28');
+
 -- --------------------------------------------------------
 
 --
@@ -73,6 +83,13 @@ CREATE TABLE `earnings` (
   `job_id` int UNSIGNED DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `earnings`
+--
+
+INSERT INTO `earnings` (`id`, `provider_id`, `amount`, `description`, `job_id`, `created_at`) VALUES
+(1, 33, 20000.00, 'huhuhu', 21, '2026-01-17 15:34:38');
 
 -- --------------------------------------------------------
 
@@ -95,7 +112,8 @@ CREATE TABLE `ledger` (
 --
 
 INSERT INTO `ledger` (`id`, `user_id`, `transaction_type`, `amount`, `description`, `reference`, `created_at`) VALUES
-(1, 31, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19');
+(1, 31, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19'),
+(2, 33, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19');
 
 -- --------------------------------------------------------
 
@@ -129,7 +147,8 @@ INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`
 (9, '2026-01-16-000000', 'App\\Database\\Migrations\\CreateEarningsTable', 'default', 'App', 1768519793, 8),
 (10, '2026-01-16-000001', 'App\\Database\\Migrations\\CreatePayoutsTable', 'default', 'App', 1768519793, 8),
 (11, '2026-01-16-010000', 'App\\Database\\Migrations\\CreateCategoriesTable', 'default', 'App', 1768523763, 9),
-(12, '2026-01-16-010001', 'App\\Database\\Migrations\\CreateServicesTable', 'default', 'App', 1768523764, 9);
+(12, '2026-01-16-010001', 'App\\Database\\Migrations\\CreateServicesTable', 'default', 'App', 1768523764, 9),
+(13, '2026-01-18-134113', 'App\\Database\\Migrations\\CreateRolesAndPermissionsTables', 'default', 'App', 1768743695, 10);
 
 -- --------------------------------------------------------
 
@@ -302,7 +321,57 @@ INSERT INTO `otps` (`id`, `user_id`, `otp_hash`, `channel`, `expires_at`, `creat
 (145, 34, '$2y$10$ZBzIYDEAEzYTsH/vPbSBqO/FWXCVUbAYcOawbBX1jvgFPz/ZPqGKm', 'email', '2026-01-17 13:31:26', '2026-01-17 12:26:26', '2026-01-17 13:26:26', '2026-01-17 13:26:26', '10.185.59.59', 'login'),
 (146, 34, '$2y$10$eb5I0L3G8MlcHfxDFIXFNeX2QSrr8lVyBag.3IFcbz0QbBrIBjntS', 'whatsapp', '2026-01-17 13:31:27', '2026-01-17 12:26:27', '2026-01-17 13:29:01', '2026-01-17 13:29:01', '10.185.59.59', 'login'),
 (147, 34, '$2y$10$ymlyDnd4xQGCfWEKH9Ydwe0WIxwSGI4MC9GLwJANkhC9qkaeu9nPu', 'email', '2026-01-17 13:43:08', '2026-01-17 12:38:08', '2026-01-17 13:38:08', '2026-01-17 13:38:08', '10.185.59.59', 'login'),
-(148, 34, '$2y$10$fLGxNMODDlthVgcul3gvo.xZtomET9A2PmEKvDaAXyL/jOjRo1q5e', 'whatsapp', '2026-01-17 13:43:09', '2026-01-17 12:38:09', '2026-01-17 13:39:10', '2026-01-17 13:39:10', '10.185.59.59', 'login');
+(148, 34, '$2y$10$fLGxNMODDlthVgcul3gvo.xZtomET9A2PmEKvDaAXyL/jOjRo1q5e', 'whatsapp', '2026-01-17 13:43:09', '2026-01-17 12:38:09', '2026-01-17 13:39:10', '2026-01-17 13:39:10', '10.185.59.59', 'login'),
+(149, 34, '$2y$10$iJkTsJU4kAQWS4723meGou55W1Qft26MhFj8vl8lJ3EkFWCXmjvlm', 'email', '2026-01-17 14:50:20', '2026-01-17 13:45:20', '2026-01-17 14:45:20', '2026-01-17 14:45:20', '10.185.59.59', 'login'),
+(150, 34, '$2y$10$lwTRu3jZlY7uTN.bcT4.suPSB42DaIItE6eejwntLi/LvPf7yJ7uC', 'whatsapp', '2026-01-17 14:50:20', '2026-01-17 13:45:20', '2026-01-17 14:45:40', '2026-01-17 14:45:40', '10.185.59.59', 'login'),
+(151, 34, '$2y$10$Kk.9MSjuFknXPh7HxWrE..ZQDGK5JuS.776bDCQYOo6cnEmXJ0wxW', 'email', '2026-01-17 15:52:23', '2026-01-17 14:47:23', '2026-01-17 15:47:23', '2026-01-17 15:47:23', '10.185.59.59', 'login'),
+(152, 34, '$2y$10$NJdnik7IS2SknN5mNmNvTuxzTxqomNTKTPo1j4WAji7Pj8pRrwEiy', 'whatsapp', '2026-01-17 15:52:23', '2026-01-17 14:47:23', '2026-01-17 15:52:09', '2026-01-17 15:52:09', '10.185.59.59', 'login'),
+(153, 34, '$2y$10$bYnjMoVkhNpCwLZO7kh9peZvT2W9TKwxiF/cJxBCtejPi5iwWCGbm', 'email', '2026-01-17 15:57:09', '2026-01-17 14:52:09', '2026-01-17 15:52:09', '2026-01-17 15:52:09', '10.185.59.59', 'login'),
+(154, 34, '$2y$10$N2juvmRbweTrMMlz/SHCpeoidvwYmyvBjiEixpv1Wtrgr.DFvk9yS', 'whatsapp', '2026-01-17 15:57:09', '2026-01-17 14:52:09', '2026-01-17 15:52:37', '2026-01-17 15:52:37', '10.185.59.59', 'login'),
+(155, 34, '$2y$10$HaZbbNORQ9cPeiZpo56SauqIAOIAuoCu05TUlNi3DGsl0YE1OdqaK', 'email', '2026-01-17 17:43:09', '2026-01-17 16:38:09', '2026-01-17 17:38:09', '2026-01-17 17:38:09', '192.168.37.59', 'login'),
+(156, 34, '$2y$10$EU/8uMUSGimgajLQu9pJJuFS.OJgTX88pfU.aEpbJWfZQj1IgVdyG', 'whatsapp', '2026-01-17 17:43:09', '2026-01-17 16:38:09', '2026-01-17 17:38:35', '2026-01-17 17:38:35', '192.168.37.59', 'login'),
+(157, 34, '$2y$10$hN1BKejfOsGPrIkOg/WpiekdzIj7IyFbtcCtu4TjTdV2q/crP6KVa', 'email', '2026-01-17 18:04:41', '2026-01-17 16:59:41', '2026-01-17 17:59:41', '2026-01-17 17:59:41', '192.168.37.59', 'login'),
+(158, 34, '$2y$10$i9fg8.BJUgERjJriYY.NzeRSxiBKYs3WnnqIncme0toUGsaY1ZmKC', 'whatsapp', '2026-01-17 18:04:41', '2026-01-17 16:59:41', '2026-01-17 18:00:46', '2026-01-17 18:00:46', '192.168.37.59', 'login'),
+(159, 34, '$2y$10$v3KkxRF/dYZ1XRofqb0EKebRauzFmb4CXXC.X0Ptc5hHSh8nN8.u2', 'email', '2026-01-17 18:05:46', '2026-01-17 17:00:46', '2026-01-17 18:00:46', '2026-01-17 18:00:46', '192.168.37.59', 'login'),
+(160, 34, '$2y$10$eFn8i/l.SOxy847XqzTVRe/D99t.aeJyVGoRJpGcLXEH4QHsOq5De', 'whatsapp', '2026-01-17 18:05:46', '2026-01-17 17:00:46', '2026-01-17 18:03:37', '2026-01-17 18:03:37', '192.168.37.59', 'login'),
+(161, 34, '$2y$10$J6MlqPvXoTvsXZB65HjKHur8d3DvzH/iry1/6.vj1Dcwae5VJOO5O', 'email', '2026-01-17 18:11:11', '2026-01-17 17:06:11', '2026-01-17 18:06:11', '2026-01-17 18:06:11', '192.168.37.59', 'login'),
+(162, 34, '$2y$10$zhJBuwD1mHTG5El2aBEdq.YYd7olP8ukfgSVGqsc0s9ObJpzniqIa', 'whatsapp', '2026-01-17 18:11:11', '2026-01-17 17:06:11', '2026-01-17 18:06:47', '2026-01-17 18:06:47', '192.168.37.59', 'login'),
+(163, 34, '$2y$10$owZS5eg5nOhnICqxp9.WPuZBVLlsAgx6Zzpd2rD.fr30eqLtpYKIe', 'email', '2026-01-17 18:15:57', '2026-01-17 17:10:57', '2026-01-17 18:10:57', '2026-01-17 18:10:57', '192.168.37.59', 'login'),
+(164, 34, '$2y$10$fqaJo20Wg1BkypinZDQh5OIJPpc5a8luwdvw7UNxJZ5j8MDVVBJl6', 'whatsapp', '2026-01-17 18:15:57', '2026-01-17 17:10:57', '2026-01-17 18:11:52', '2026-01-17 18:11:52', '192.168.37.59', 'login'),
+(165, 34, '$2y$10$f/VzQ.3QfBIP0THOpPoLnOPGP.bGrPPx78usZH6x22KcfhqsYPz8G', 'email', '2026-01-17 18:24:14', '2026-01-17 17:19:14', '2026-01-17 18:19:14', '2026-01-17 18:19:14', '192.168.37.59', 'login'),
+(166, 34, '$2y$10$BWMjijOuQC.CDfedEM6bq.6m3vt4Gl8AVi6bxJ5AF7UiZ4HetZiDu', 'whatsapp', '2026-01-17 18:24:14', '2026-01-17 17:19:14', '2026-01-17 18:19:40', '2026-01-17 18:19:40', '192.168.37.59', 'login'),
+(167, 34, '$2y$10$ed4nOFDVc/NnT8U6pMc7KewBKN8iSZAm52XeEf7gK.4bTfwCMRNca', 'email', '2026-01-17 19:11:31', '2026-01-17 18:06:31', '2026-01-17 19:06:31', '2026-01-17 19:06:31', '192.168.37.59', 'login'),
+(168, 34, '$2y$10$NmxTLprZcjvehhAyNrOcguiHLVCTbImBDkxt7qLvqUXroeJIdSZrK', 'whatsapp', '2026-01-17 19:11:31', '2026-01-17 18:06:31', '2026-01-17 19:07:02', '2026-01-17 19:07:02', '192.168.37.59', 'login'),
+(169, 34, '$2y$10$Va1vkQAdAe6YVMSqKxZLHOCEzNY5MbZEiOawChVouJVm80nse9jRS', 'email', '2026-01-17 19:19:52', '2026-01-17 18:14:52', '2026-01-17 19:14:52', '2026-01-17 19:14:52', '192.168.37.59', 'login'),
+(170, 34, '$2y$10$I1kjBBxguyuc/WbzAV9fpe9xuJuD2HMWNw9vWAfR.dd4lcWUndALq', 'whatsapp', '2026-01-17 19:19:52', '2026-01-17 18:14:52', '2026-01-17 19:15:34', '2026-01-17 19:15:34', '192.168.37.59', 'login'),
+(171, 34, '$2y$10$AWlTaoWmeVrpHWHbGgErvuV37FMxBlMmVLbYyOv6tXxwQd9SdfixC', 'email', '2026-01-18 06:20:57', '2026-01-18 05:15:57', '2026-01-18 06:15:57', '2026-01-18 06:15:57', '192.168.37.59', 'login'),
+(172, 34, '$2y$10$WUJ6DvmcwkJPpKQsO91RSujbpj.LeAVY7C2iUt7pw4NKc2oZFCwcm', 'whatsapp', '2026-01-18 06:20:57', '2026-01-18 05:15:57', '2026-01-18 06:16:55', '2026-01-18 06:16:55', '192.168.37.59', 'login'),
+(173, 34, '$2y$10$W8Ud1JpimS.p1Ttwb7bIk.HyOJZ5wPAOAClZ/CZpaxEyuGMXEWUBC', 'email', '2026-01-18 06:26:10', '2026-01-18 05:21:10', '2026-01-18 06:21:10', '2026-01-18 06:21:10', '192.168.37.59', 'login'),
+(174, 34, '$2y$10$yHZjOzN/9rxC4N/DDEZwpO2pg7MEkXgu03Ey4THWCsM4aDpTH9h/6', 'whatsapp', '2026-01-18 06:26:10', '2026-01-18 05:21:10', '2026-01-18 06:21:29', '2026-01-18 06:21:29', '192.168.37.59', 'login'),
+(175, 34, '$2y$10$Hfeir7PDT.8e7gZZpi6bGeOgtNiS8asEIHUZK.k7OLwxr9HLL1JRe', 'email', '2026-01-18 07:08:15', '2026-01-18 06:03:15', '2026-01-18 07:03:15', '2026-01-18 07:03:15', '192.168.37.59', 'login'),
+(176, 34, '$2y$10$pFEtiVPjHA5Y9VUpRl0y0OT8VA1GJ4msqumgir6s64cD.4lCYGSPC', 'whatsapp', '2026-01-18 07:08:15', '2026-01-18 06:03:15', '2026-01-18 07:04:45', '2026-01-18 07:04:45', '192.168.37.59', 'login'),
+(177, 34, '$2y$10$HM8RKTxnyQtIQPInuB4v2eo84MPx7mjuZ7uxYOqJgSYb2Jl3PaM5i', 'email', '2026-01-18 07:32:17', '2026-01-18 06:27:17', '2026-01-18 07:27:17', '2026-01-18 07:27:17', '192.168.37.59', 'login'),
+(178, 34, '$2y$10$J3PYe0gdAfTY2chWKCrc9usJFbWqCAAq0Se1i6/9p7.w9Km9xNQWC', 'whatsapp', '2026-01-18 07:32:17', '2026-01-18 06:27:17', '2026-01-18 07:27:38', '2026-01-18 07:27:38', '192.168.37.59', 'login'),
+(179, 34, '$2y$10$MQ/hnAon/dvGEj0To6akiONxwHJwmavL/3nDWzLpQyp8udbc45Awm', 'email', '2026-01-18 10:31:08', '2026-01-18 09:26:08', '2026-01-18 10:26:08', '2026-01-18 10:26:08', '10.219.25.59', 'login'),
+(180, 34, '$2y$10$hIcpSxjlWzCsiQGZnglFQOWD3eRXRE1wLcZYPBL1ahG7bZwwrjB.W', 'whatsapp', '2026-01-18 10:31:09', '2026-01-18 09:26:09', NULL, '2026-01-18 10:26:09', '10.219.25.59', 'login'),
+(181, 34, '$2y$10$2JZmo1i.K//G2ysn/NN.nOtH4QRhmO5qP/xGX2lnBgeCIIwzFqZvu', 'email', '2026-01-18 10:38:41', '2026-01-18 09:33:41', '2026-01-18 10:33:41', '2026-01-18 10:33:41', '10.219.25.59', 'login'),
+(182, 34, '$2y$10$pIdhXrz0qqFum4AnfOxHA.Tg9lAi63Vcc7MavE1zOQdX4fS7yViIu', 'whatsapp', '2026-01-18 10:38:41', '2026-01-18 09:33:41', '2026-01-18 10:37:58', '2026-01-18 10:37:58', '10.219.25.59', 'login'),
+(183, 34, '$2y$10$nOEAmOAcr1TXtx1vj/9KFeV5Y0GU7vGF/kPKPZx9KMhLzvV8b51Ye', 'email', '2026-01-18 10:42:58', '2026-01-18 09:37:58', '2026-01-18 10:37:58', '2026-01-18 10:37:58', '10.219.25.59', 'login'),
+(184, 34, '$2y$10$yJfMDmZo20kn5cwCuyYC5u2PjtkJi4Tg.ewQIlHVznjf/mz2r3nXq', 'whatsapp', '2026-01-18 10:42:58', '2026-01-18 09:37:58', '2026-01-18 10:38:25', '2026-01-18 10:38:25', '10.219.25.59', 'login'),
+(185, 34, '$2y$10$ebme2SgnxZmR0xfPVI/Wh.wXYFznVYmYxcQLsz0SbAVmpAWQ1JQKq', 'email', '2026-01-18 11:29:34', '2026-01-18 10:24:34', '2026-01-18 11:24:34', '2026-01-18 11:24:34', '10.219.25.59', 'login'),
+(186, 34, '$2y$10$psuvsdvT0xrPgkUDCAp0b.Gp3jKT1rxQy.I5T7h/tTJcgSfNvhPxS', 'whatsapp', '2026-01-18 11:29:35', '2026-01-18 10:24:35', '2026-01-18 11:25:11', '2026-01-18 11:25:11', '10.219.25.59', 'login'),
+(187, 34, '$2y$10$msjaOYb1WF.QFSfST5c74.j0pXsHT5nmrG.MEsVnLIABt3OnBs5eu', 'email', '2026-01-18 12:54:08', '2026-01-18 11:49:08', '2026-01-18 12:49:08', '2026-01-18 12:49:08', '10.219.25.59', 'login'),
+(188, 34, '$2y$10$HEYsA9fTqPVjeEgn.AA3OOeV..lGQxGliqcaA7oAktRIdFmBOiWSm', 'whatsapp', '2026-01-18 12:54:08', '2026-01-18 11:49:08', '2026-01-18 12:50:40', '2026-01-18 12:50:40', '10.219.25.59', 'login'),
+(189, 34, '$2y$10$csF/jTP6g/.rBnCSESfHAuC6LkvTLGseORVfasYe2l5QnbxqTf8yC', 'email', '2026-01-18 12:59:35', '2026-01-18 11:54:35', '2026-01-18 12:54:35', '2026-01-18 12:54:35', '10.219.25.59', 'login'),
+(190, 34, '$2y$10$TG.bwyl1kYUqqTWf90M8/eFLlPDA1/aa1NFdAtofZd1v95dRMVvXW', 'whatsapp', '2026-01-18 12:59:35', '2026-01-18 11:54:35', '2026-01-18 12:55:00', '2026-01-18 12:55:00', '10.219.25.59', 'login'),
+(191, 34, '$2y$10$LI7ekxPvvRmYOMmOT9Kt/uyU2T0Sg3/IfDliARDicmjBDFoi7Yja.', 'email', '2026-01-18 14:00:27', '2026-01-18 12:55:27', '2026-01-18 13:55:27', '2026-01-18 13:55:27', '10.219.25.59', 'login'),
+(192, 34, '$2y$10$peIL4uI1s2JZphv3yE6QL.H1YYvGDELal9dnF3r1b6vMlu.g/BZfu', 'whatsapp', '2026-01-18 14:00:27', '2026-01-18 12:55:27', '2026-01-18 13:55:49', '2026-01-18 13:55:49', '10.219.25.59', 'login'),
+(193, 34, '$2y$10$EYv.mM27ys9m2q3YgEfAl.Mc4Ts4sGoW8Bcjid3.f6p.KMz6u/a/u', 'email', '2026-01-18 14:01:54', '2026-01-18 12:56:54', '2026-01-18 13:56:54', '2026-01-18 13:56:54', '10.219.25.59', 'login'),
+(194, 34, '$2y$10$i2O7YkcCnQMnaSDw4HyszerwUOYcChwK9nf/P4tXkvand1C9xX4Fm', 'whatsapp', '2026-01-18 14:01:55', '2026-01-18 12:56:55', '2026-01-18 13:57:21', '2026-01-18 13:57:21', '10.219.25.59', 'login'),
+(195, 34, '$2y$10$zqObguZFj9MKcUqPH/0VbOzii2Y6osPHu3HqeQDRaso2cJ3Z/NGQ2', 'email', '2026-01-18 14:36:36', '2026-01-18 13:31:36', '2026-01-18 14:31:36', '2026-01-18 14:31:36', '10.219.25.59', 'login'),
+(196, 34, '$2y$10$OZbWKy3nq8iSoxqaPk1OsO8d2B62hs.5nfYa3kJuKlry.iAcgiIDe', 'whatsapp', '2026-01-18 14:36:36', '2026-01-18 13:31:36', '2026-01-18 14:33:46', '2026-01-18 14:33:46', '10.219.25.59', 'login'),
+(197, 34, '$2y$10$6UmaHeZE2aCnpyRFnYS16uro.bJE/Mzw9frVUs/Y6H0HguIZapl/a', 'email', '2026-01-18 14:40:57', '2026-01-18 13:35:57', '2026-01-18 14:35:57', '2026-01-18 14:35:57', '10.219.25.59', 'login'),
+(198, 34, '$2y$10$reZO71JdwYnhJUqaGZP.5e02kT/WvjsuQmbREWMn7dBywzMxgVEZy', 'whatsapp', '2026-01-18 14:40:58', '2026-01-18 13:35:58', '2026-01-18 14:36:18', '2026-01-18 14:36:18', '10.219.25.59', 'login');
 
 -- --------------------------------------------------------
 
@@ -320,6 +389,45 @@ CREATE TABLE `payouts` (
   `requested_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `processed_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `payouts`
+--
+
+INSERT INTO `payouts` (`id`, `provider_id`, `amount`, `status`, `payment_method`, `transaction_id`, `requested_at`, `processed_at`) VALUES
+(1, 33, 20000.00, 'pending', 'yugygy', 'tftyftyft', '2026-01-17 15:35:21', '2026-01-17 15:34:52');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `permissions`
+--
+
+CREATE TABLE `permissions` (
+  `id` int UNSIGNED NOT NULL,
+  `group_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `permission_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `permissions`
+--
+
+INSERT INTO `permissions` (`id`, `group_name`, `permission_name`, `description`, `created_at`, `updated_at`) VALUES
+(1, 'Users', 'view-users', 'View list of users', NULL, NULL),
+(2, 'Users', 'create-users', 'Create a new user', NULL, NULL),
+(3, 'Users', 'edit-users', 'Edit user details', NULL, NULL),
+(4, 'Users', 'delete-users', 'Delete a user', NULL, NULL),
+(5, 'Providers', 'view-providers', 'View list of providers', NULL, NULL),
+(6, 'Providers', 'approve-providers', 'Approve or reject provider applications', NULL, NULL),
+(7, 'System', 'manage-roles', 'Manage roles and permissions', NULL, NULL),
+(8, 'Reports', 'view-reports', 'View system reports', NULL, NULL),
+(9, 'Finance', 'view-ledger', 'View financial ledger', NULL, NULL),
+(10, 'Finance', 'manage-payouts', 'Manage provider payouts', NULL, NULL),
+(11, 'Finance', 'manage-refunds', 'Manage customer refunds', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -349,6 +457,53 @@ INSERT INTO `refunds` (`id`, `user_id`, `transaction_id`, `amount`, `reason`, `s
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `roles`
+--
+
+CREATE TABLE `roles` (
+  `id` int UNSIGNED NOT NULL,
+  `role_name` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `roles`
+--
+
+INSERT INTO `roles` (`id`, `role_name`, `description`, `created_at`, `updated_at`) VALUES
+(1, 'costomer care', '', '2026-01-18 14:36:57', '2026-01-18 14:36:57'),
+(2, 'HR', '', '2026-01-18 14:49:37', '2026-01-18 14:49:37');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `role_permissions`
+--
+
+CREATE TABLE `role_permissions` (
+  `id` int UNSIGNED NOT NULL,
+  `role_id` int UNSIGNED NOT NULL,
+  `permission_id` int UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `role_permissions`
+--
+
+INSERT INTO `role_permissions` (`id`, `role_id`, `permission_id`) VALUES
+(1, 1, 1),
+(2, 1, 2),
+(3, 1, 5),
+(4, 1, 7),
+(5, 1, 8),
+(6, 1, 9),
+(7, 1, 11);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `services`
 --
 
@@ -361,6 +516,18 @@ CREATE TABLE `services` (
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `services`
+--
+
+INSERT INTO `services` (`id`, `category_id`, `name`, `description`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Bore Hole', 'office or home', 'active', '2026-01-17 19:23:03', '2026-01-18 07:31:48'),
+(2, 1, 'Overhead tank', 'fixing', 'active', '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
+(3, 2, 'renewable', 'solar', 'active', '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
+(4, 2, 'grid', 'grid', 'active', '2026-01-17 19:40:32', '2026-01-17 19:40:32'),
+(5, 3, 'furniture', 'all kinds', 'active', '2026-01-17 19:59:15', '2026-01-17 19:59:15'),
+(6, 4, 'Residential', 'Home cleaning and chores', 'active', '2026-01-18 10:43:45', '2026-01-18 10:43:45');
 
 -- --------------------------------------------------------
 
@@ -403,7 +570,8 @@ INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `role`, `kyc_st
 (36, 'Sumaya Ayuba', 'seamlesscallapp1@gmail.com', '+2348022222222', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Customer', 'Pending', '2026-01-12 10:20:35', '2026-01-15 20:24:28', 'active', 0, 'rejected', 34, '2026-01-15 19:30:32', '', 0, 'Kaduna', NULL, '2026-01-15 18:17:50', NULL),
 (37, 'Sumaya Ayuba', 'seamlesscallap@gmail.com', '+2348022222334', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Provider', 'Pending', '2026-01-12 10:20:35', '2026-01-12 10:20:35', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (38, 'Ismail Ali Bello', 'seammlesscallapp1@gmail.com', '+2348044444444', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Admin', 'Pending', '2026-01-15 19:27:57', '2026-01-15 20:43:54', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
-(40, 'Aisha Abdullahi', 'seamlesscallapp@gmail.com', '+2348077777777', '$2y$10$O7b6KH5qYQsAl0sa/Eqv.ed7gXuuWQezVX86Xed001xUEgO3/ZQm.', 'Admin', 'Pending', '2026-01-15 19:48:09', '2026-01-15 19:48:09', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+(40, 'Aisha Abdullahi', 'seamlesscallapp@gmail.com', '+2348077777777', '$2y$10$O7b6KH5qYQsAl0sa/Eqv.ed7gXuuWQezVX86Xed001xUEgO3/ZQm.', 'Admin', 'Pending', '2026-01-15 19:48:09', '2026-01-15 19:48:09', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
+(41, 'Hafsat Salis', 'hs@gmail.com', '+2348034234321', '$2y$10$inQlO3UkYMo4MDs/YWafhepVgXnOFv8vYpTnSP.ylPbBqEReLlyui', 'Admin', 'Pending', '2026-01-18 12:32:11', '2026-01-18 12:32:11', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -458,12 +626,33 @@ ALTER TABLE `payouts`
   ADD KEY `payouts_provider_id_foreign` (`provider_id`);
 
 --
+-- Indexes for table `permissions`
+--
+ALTER TABLE `permissions`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `refunds`
 --
 ALTER TABLE `refunds`
   ADD PRIMARY KEY (`id`),
   ADD KEY `refunds_user_id_foreign` (`user_id`),
   ADD KEY `refunds_transaction_id_foreign` (`transaction_id`);
+
+--
+-- Indexes for table `roles`
+--
+ALTER TABLE `roles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `role_name` (`role_name`);
+
+--
+-- Indexes for table `role_permissions`
+--
+ALTER TABLE `role_permissions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `role_permissions_role_id_foreign` (`role_id`),
+  ADD KEY `role_permissions_permission_id_foreign` (`permission_id`);
 
 --
 -- Indexes for table `services`
@@ -495,37 +684,43 @@ ALTER TABLE `activity_log`
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `earnings`
 --
 ALTER TABLE `earnings`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `ledger`
 --
 ALTER TABLE `ledger`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `otps`
 --
 ALTER TABLE `otps`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=199;
 
 --
 -- AUTO_INCREMENT for table `payouts`
 --
 ALTER TABLE `payouts`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `permissions`
+--
+ALTER TABLE `permissions`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `refunds`
@@ -534,16 +729,28 @@ ALTER TABLE `refunds`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `roles`
+--
+ALTER TABLE `roles`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `role_permissions`
+--
+ALTER TABLE `role_permissions`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- Constraints for dumped tables
@@ -585,6 +792,13 @@ ALTER TABLE `payouts`
 ALTER TABLE `refunds`
   ADD CONSTRAINT `refunds_transaction_id_foreign` FOREIGN KEY (`transaction_id`) REFERENCES `ledger` (`id`) ON DELETE CASCADE ON UPDATE SET NULL,
   ADD CONSTRAINT `refunds_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `role_permissions`
+--
+ALTER TABLE `role_permissions`
+  ADD CONSTRAINT `role_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `role_permissions_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `services`

@@ -9,12 +9,52 @@ use App\Models\RefundModel;
 use App\Models\ActivityLogModel;
 use App\Models\EarningsModel;
 use App\Models\PayoutsModel;
+use App\Modules\System\Models\RoleModel; // NEW
+use App\Modules\System\Models\UserRoleModel; // NEW
 use CodeIgniter\API\ResponseTrait;
 use Exception;
 
 class AdminController extends BaseController
 {
     use ResponseTrait;
+
+    /**
+     * A helper function to ensure IDs are integers in the output array.
+     */
+    private function formatOutput(array $data): array
+    {
+        return array_map(function ($row) {
+            if (is_object($row)) { // Handle CodeIgniter's default object return
+                if (isset($row->id)) {
+                    $row->id = (int)$row->id;
+                }
+                if (isset($row->user_id)) {
+                    $row->user_id = (int)$row->user_id;
+                }
+                if (isset($row->role_id)) {
+                    $row->role_id = (int)$row->role_id;
+                }
+                if (isset($row->permission_id)) {
+                    $row->permission_id = (int)$row->permission_id;
+                }
+                return (array)$row; // Convert object to array for consistent output
+            } else { // Already an array
+                if (isset($row['id'])) {
+                    $row['id'] = (int)$row['id'];
+                }
+                if (isset($row['user_id'])) {
+                    $row['user_id'] = (int)$row['user_id'];
+                }
+                if (isset($row['role_id'])) {
+                    $row['role_id'] = (int)$row['role_id'];
+                }
+                if (isset($row['permission_id'])) {
+                    $row['permission_id'] = (int)$row['permission_id'];
+                }
+                return $row;
+            }
+        }, $data);
+    }
 
     public function getProviderApplications()
     {
@@ -28,7 +68,7 @@ class AdminController extends BaseController
         $userModel = new UserModel();
         $applications = $userModel->where('provider_status', 'pending')->findAll();
 
-        return $this->respond(['data' => $applications]);
+        return $this->respond(['data' => $this->formatOutput($applications)]);
     }
 
     /**
@@ -164,7 +204,7 @@ class AdminController extends BaseController
         $userModel = new UserModel();
         $customers = $userModel->where('role', 'Customer')->findAll();
 
-        return $this->respond(['data' => $customers]);
+        return $this->respond(['data' => $this->formatOutput($customers)]);
     }
 
     public function getUserDetails($userId)
@@ -182,7 +222,8 @@ class AdminController extends BaseController
             return $this->failNotFound('User not found');
         }
 
-        return $this->respond(['data' => $customer]);
+        // CodeIgniter's Model::find() returns objects by default.
+        return $this->respond(['data' => $this->formatOutput([$customer])[0]]);
     }
 
     public function getUserLedger($userId)
@@ -196,7 +237,7 @@ class AdminController extends BaseController
         $ledgerModel = new LedgerModel();
         $ledgerEntries = $ledgerModel->where('user_id', $userId)->findAll();
 
-        return $this->respond(['data' => $ledgerEntries]);
+        return $this->respond(['data' => $this->formatOutput($ledgerEntries)]);
     }
 
     public function getUserRefunds($userId)
@@ -210,7 +251,7 @@ class AdminController extends BaseController
         $refundModel = new RefundModel();
         $refunds = $refundModel->where('user_id', $userId)->findAll();
 
-        return $this->respond(['data' => $refunds]);
+        return $this->respond(['data' => $this->formatOutput($refunds)]);
     }
 
     public function getUserActivityLog($userId)
@@ -224,7 +265,7 @@ class AdminController extends BaseController
         $activityLogModel = new ActivityLogModel();
         $activityLogs = $activityLogModel->where('user_id', $userId)->findAll();
 
-        return $this->respond(['data' => $activityLogs]);
+        return $this->respond(['data' => $this->formatOutput($activityLogs)]);
     }
 
     public function getProviders()
@@ -238,7 +279,7 @@ class AdminController extends BaseController
         $userModel = new UserModel();
         $providers = $userModel->where('role', 'Provider')->findAll();
 
-        return $this->respond(['data' => $providers]);
+        return $this->respond(['data' => $this->formatOutput($providers)]);
     }
 
     public function getProviderEarnings($providerId)
@@ -252,7 +293,7 @@ class AdminController extends BaseController
         $earningsModel = new EarningsModel();
         $earnings = $earningsModel->where('provider_id', $providerId)->findAll();
 
-        return $this->respond(['data' => $earnings]);
+        return $this->respond(['data' => $this->formatOutput($earnings)]);
     }
 
     public function getProviderPayouts($providerId)
@@ -266,6 +307,149 @@ class AdminController extends BaseController
         $payoutsModel = new PayoutsModel();
         $payouts = $payoutsModel->where('provider_id', $providerId)->findAll();
 
-        return $this->respond(['data' => $payouts]);
+        return $this->respond(['data' => $this->formatOutput($payouts)]);
+    }
+
+
+    // NEW ENDPOINTS BELOW (User Management for Roles & Permissions)
+
+    /**
+     * Get all users.
+     *
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function getUsers()
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        $userModel = new UserModel();
+        $users = $userModel->asArray()->findAll(); // Get all users, not just customers/providers
+
+        return $this->respond(['data' => $this->formatOutput($users)]);
+    }
+
+    /**
+     * Update user details.
+     *
+     * @param int $userId
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function updateUser(int $userId)
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        $userModel = new UserModel();
+        $userToUpdate = $userModel->find($userId);
+
+        if (!$userToUpdate) {
+            return $this->failNotFound('User not found.');
+        }
+
+        $rules = [
+            'name' => 'permit_empty|min_length[3]|max_length[255]',
+            'phone' => 'permit_empty|min_length[10]|max_length[15]',
+            'status' => 'permit_empty|in_list[pending,active,suspended]',
+            'role' => 'permit_empty|in_list[Admin,Provider,Customer]', // Allow updating the original role
+            'kyc_status' => 'permit_empty|in_list[Pending,Verified,Rejected]',
+            'is_provider' => 'permit_empty|in_list[0,1]',
+            'provider_status' => 'permit_empty|in_list[pending,approved,rejected]',
+            // Password change should be a separate endpoint for security
+            // Email change should be handled carefully due to uniqueness
+        ];
+
+        $input = $this->request->getJSON(true); // Get as associative array
+        $allowedFields = ['name', 'phone', 'status', 'role', 'kyc_status', 'is_provider', 'provider_status'];
+        $updateData = array_intersect_key($input, array_flip($allowedFields));
+
+        // Skip validation for fields not present in the input
+        $validationRules = [];
+        foreach ($updateData as $field => $value) {
+            if (isset($rules[$field])) {
+                $validationRules[$field] = $rules[$field];
+            }
+        }
+
+        if (!empty($validationRules) && !$this->validate($validationRules)) {
+            return $this->failValidationErrors("errors");
+        }
+
+        try {
+            if ($userModel->update($userId, $updateData)) {
+                return $this->respondUpdated(['message' => 'User updated successfully.']);
+            } else {
+                $errors = $userModel->errors();
+                if (!empty($errors)) {
+                    return $this->failValidationErrors($errors);
+                }
+                return $this->failServerError('Failed to update user.');
+            }
+        } catch (Exception $e) {
+            log_message('error', '[ERROR] updateUser: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    /**
+     * Get roles assigned to a specific user.
+     *
+     * @param int $userId
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function getUserRoles(int $userId)
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        $userModel = new UserModel();
+        if (!$userModel->find($userId)) {
+            return $this->failNotFound('User not found.');
+        }
+
+        $userRoleModel = new UserRoleModel();
+        $userRoles = $userRoleModel->getUserRoles($userId);
+
+        return $this->respond(['data' => $this->formatOutput($userRoles)]);
+    }
+
+    /**
+     * Update roles assigned to a specific user.
+     *
+     * @param int $userId
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function updateUserRoles(int $userId)
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        $userModel = new UserModel();
+        if (!$userModel->find($userId)) {
+            return $this->failNotFound('User not found.');
+        }
+
+        $input = $this->request->getJSON(true); // Get as associative array
+        $roleIds = $input['role_ids'] ?? [];
+
+        // Validate $roleIds to ensure they are integers
+        if (!is_array($roleIds) || !array_walk($roleIds, 'is_int')) {
+            return $this->failValidationErrors(['role_ids' => 'Role IDs must be an array of integers.']);
+        }
+
+        $userRoleModel = new UserRoleModel();
+        if ($userRoleModel->updateUserRoles($userId, $roleIds)) {
+            return $this->respondUpdated(['message' => 'User roles updated successfully.']);
+        }
+
+        return $this->failServerError('Failed to update user roles.');
     }
 }

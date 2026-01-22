@@ -9,9 +9,34 @@ use Google_Client;
 use Google_Service_Oauth2;
 use CodeIgniter\API\ResponseTrait;
 
+// Import the models needed for permissions
+use App\Modules\System\Models\UserRoleModel;
+
 class AuthController extends BaseController
 {
     use ResponseTrait;
+
+    /**
+     * Get all unique permissions for a given user.
+     *
+     * @param int $userId
+     * @return array
+     */
+    private function _getUserPermissions(int $userId): array
+    {
+        $db = \Config\Database::connect();
+        $builder = $db->table('user_roles');
+        $builder->select('p.permission_name')
+                ->join('role_permissions as rp', 'rp.role_id = user_roles.role_id')
+                ->join('permissions as p', 'p.id = rp.permission_id')
+                ->where('user_roles.user_id', $userId);
+        
+        $query = $builder->get();
+        $result = $query->getResultArray();
+        
+        // Return a flat, unique array of permission names
+        return array_unique(array_column($result, 'permission_name'));
+    }
 
     public function oauth()
     {
@@ -53,11 +78,13 @@ class AuthController extends BaseController
             $userModel = new UserModel();
 
             log_message('info', 'Searching for user by provider_id: ' . $payload['sub']);
-            $user = $userModel->findUserByProviderId($payload['sub']);
+            
+            // Assuming UserModel methods return arrays
+            $user = $userModel->asArray()->where('google_id', $payload['sub'])->first();
 
             if (!$user) {
-                log_message('info', 'User not found by provider_id. Searching by email: ' . $payload['email']);
-                $user = $userModel->findUserByEmail($payload['email']);
+                log_message('info', 'User not found by google_id. Searching by email: ' . $payload['email']);
+                $user = $userModel->asArray()->where('email', $payload['email'])->first();
             }
 
             if (!$user) {
@@ -65,30 +92,36 @@ class AuthController extends BaseController
                 $newUserData = [
                     'name' => $payload['name'],
                     'email' => $payload['email'],
-                    'provider' => 'google',
-                    'provider_id' => $payload['sub'],
+                    'phone' => '', // Phone is required in the DB, but not provided by Google
+                    'password' => password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), // Create a random, unusable password
+                    'google_id' => $payload['sub'],
                     'role' => 'Customer',
                 ];
-                $userId = $userModel->createUser($newUserData);
-                $user = $userModel->find($userId);
+                $userId = $userModel->insert($newUserData);
+                $user = $userModel->asArray()->find($userId);
                 log_message('info', 'New user created with ID: ' . $userId);
             } else {
                 log_message('info', 'User found with ID: ' . $user['id']);
-                if (empty($user['provider']) || empty($user['provider_id'])) {
-                    log_message('info', 'Updating user with provider info.');
+                if (empty($user['google_id'])) {
+                    log_message('info', 'Updating user with google_id.');
                     $userModel->update($user['id'], [
-                        'provider' => 'google',
-                        'provider_id' => $payload['sub'],
+                        'google_id' => $payload['sub'],
                     ]);
                 }
             }
             
             log_message('info', 'Generating JWT for user ID: ' . $user['id']);
+            
+            // Get user's granular permissions
+            $permissions = $this->_getUserPermissions((int)$user['id']);
+            log_message('info', 'Permissions for user ' . $user['id'] . ': ' . json_encode($permissions));
+
             $jwtHandler = new JWTHandler();
             $jwtPayload = [
-                'id' => $user['id'],
+                'id' => (int)$user['id'],
                 'email' => $user['email'],
                 'role' => $user['role'],
+                'permissions' => $permissions, // Add permissions to the JWT payload
             ];
             $jwt = $jwtHandler->generateToken($jwtPayload);
             log_message('info', 'JWT generated successfully.');
