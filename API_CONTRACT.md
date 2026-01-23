@@ -1,4 +1,4 @@
-# Seamless Call — API Contract (Backend Source of Truth) (v1.2)
+# Seamless Call — API Contract (Backend Source of Truth) (v1.3)
 
 This document defines the backend API contract. Flutter must conform to it.
 
@@ -24,6 +24,7 @@ This document defines the backend API contract. Flutter must conform to it.
 - Auth module: `/api/v1`
 - Admin module: `/api/v1/admin` (auth required)
 - Operations module: `/api/v1/operations` (auth required)
+- System module: `/api/v1/system` (auth required)
 
 ---
 
@@ -120,12 +121,23 @@ Resource: `categories` under `/api/v1/admin`
 | Assign provider to job | POST | `/api/v1/operations/admin/jobs/{jobId}/assign` | Yes |
 | Get available providers | GET | `/api/v1/operations/admin/providers/available` | Yes |
 
-> NOTE  
-> `GET /admin/jobs` is currently defined outside the group in the module file as pasted.
-> It should be moved into the `/api/v1/operations` group to avoid a broken/ambiguous route.
+---
+
+### System (`/api/v1/system`, namespace: `App\Modules\System\Controllers`, filter: `auth`)
+#### Roles
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Get roles | GET | `/api/v1/system/roles` | Yes |
+| Create role | POST | `/api/v1/system/roles` | Yes |
+
+#### Permissions
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Get permissions | GET | `/api/v1/system/permissions` | Yes |
+| Get role permissions | GET | `/api/v1/system/roles/{roleId}/permissions` | Yes |
+| Update role permissions | PUT | `/api/v1/system/roles/{roleId}/permissions` | Yes |
 
 ---
 
-## Next modules to extract (pending)
+## Next module to extract (pending)
 - Dashboard routes: `app/Modules/Dashboard/Config/Routes.php`
-- System routes: `app/Modules/System/Config/Routes.php`
