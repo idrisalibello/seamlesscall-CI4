@@ -1,63 +1,39 @@
 # Seamless Call — Backend Project Map (CI4) (v1)
 
 ## Repo root (what matters)
-- `app/` — application code (controllers, models, modules, filters, config)
-- `public/` — web root (front controller `index.php`, `.htaccess`)
-- DB dump present: `public/seamless_call_db.sql` (reference only; do not treat as migrations)
+- `app/` — application code
+- `public/` — web root (`index.php`, `.htaccess`)
+- DB dump present: `public/seamless_call_db.sql` (reference only)
 
-## CI4 structure (observed)
-### `app/Config/`
-- Application configuration (routing, filters, CORS policy, environment settings)
+## Application structure (observed)
 
-### `app/Controllers/`
-- HTTP controllers (API endpoints live here or under Modules)
+### Routing & HTTP entry
+- `public/index.php` — CI4 front controller
+- `public/.htaccess` — rewrite to `index.php`
+- `app/Config/Routes.php` — route definitions (customized; small file)
+- `app/Config/Modules.php` — module system configuration (present)
+- `app/Config/Filters.php` — global/route filters configuration (present)
 
-### `app/Models/`
-- Database models (used by controllers/services)
+### CORS
+- `app/Config/Cors.php` — CORS policy configuration (present)
+- `public/cors_test.php` — local test script (exists; ensure it matches real API behavior)
 
-### `app/Filters/`
-- Cross-cutting concerns:
-  - authentication/authorization
-  - CORS handling (often here or in Config)
-  - request guards
+### Filters / middleware-like logic
+- `app/Filters/` — filter implementations (auth/role/CORS/etc.)
+- `app/Config/Filters.php` — where filters are attached to routes/groups
 
-### `app/Database/`
-- Migrations and seeds (preferred over raw SQL dumps for reproducibility)
+### Data layer
+- `app/Models/` — models
+- `app/Database/` — migrations/seeds (preferred over raw SQL dump)
 
-### `app/Modules/` (non-default CI4, important)
-- Modular organization of domain areas (likely where most feature controllers live)
-- This folder must be mapped carefully because it defines the real API surface.
+### Modular domains (non-default CI4, primary feature organization)
+`app/Modules/` contains:
+- `Admin/`
+- `Auth/`
+- `Dashboard/`
+- `Operations/`
+- `System/`
 
-### `app/Helpers/`
-- Utility helpers (pure functions / shared logic)
+This folder is expected to contain most feature controllers/services/models per domain.
 
-### Other folders present (not mapped yet)
-- `app/Views/` — server-rendered views (if any)
-- `app/Libraries/`, `app/ThirdParty/` — custom libs / external code
-
-## Public web root (critical)
-### `public/index.php`
-- Entry point for all web requests (front controller)
-
-### `public/.htaccess`
-- URL rewriting and routing to `index.php`
-
-### `public/cors_test.php`
-- Local CORS testing script (exists; policy must be consistent with API)
-
-## “Golden files” (first to reference during bugs)
-1. `app/Config/Routes.php` (or routing config location)
-2. `app/Filters/*` (auth/CORS enforcement)
-3. `public/.htaccess` + `public/index.php` (rewrite + base path)
-4. Auth controllers/services (location TBD; likely `app/Controllers` or `app/Modules/*`)
-5. `.env` (existence and key settings; do not commit secrets)
-
-## Known integration hazards (must stay explicit)
-- `/public` vs non-`/public` base URL decisions depend on vhost config and rewrite rules.
-- `/api/v1` routing prefix must be consistent with Flutter requests.
-- CORS behavior differs between mobile (often “works”) and web (strict); policy must be verified.
-
-## Bug report format (backend)
-- Request: method + full path + headers (especially Origin/Authorization)
-- Response: status + body
-- Relevant file paths + 30–80 lines only
+## Golden files
