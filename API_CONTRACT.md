@@ -68,3 +68,11 @@ Must support:
 | Auth | Login (password) | POST | `/api/v1/login` | No |  |
 | Auth | Request login OTP | POST | `/api/v1/auth/otp/request` | No |  |
 | Auth | Login with
+## Confirmed Auth endpoints (from backend module routes)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Register | POST | `/api/v1/register` | No |
+| Login (password) | POST | `/api/v1/login` | No |
+| Request login OTP | POST | `/api/v1/auth/otp/request` | No |
+| Login with OTP | POST | `/api/v1/auth/otp/login` | No |
+| Apply as Provider | POST | `/api/v1/auth/apply-as-provider` | Yes |
