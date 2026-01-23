@@ -1,4 +1,4 @@
-# Seamless Call — API Contract (Backend Source of Truth) (v1.3)
+# Seamless Call — API Contract (Backend Source of Truth) (v1.4)
 
 This document defines the backend API contract. Flutter must conform to it.
 
@@ -22,6 +22,7 @@ This document defines the backend API contract. Flutter must conform to it.
 
 ## API prefixes (CONFIRMED)
 - Auth module: `/api/v1`
+- Dashboard module: `/api/v1/dashboard` (auth required)
 - Admin module: `/api/v1/admin` (auth required)
 - Operations module: `/api/v1/operations` (auth required)
 - System module: `/api/v1/system` (auth required)
@@ -47,17 +48,17 @@ Must support:
 ---
 
 ## Response envelopes (TBD — normalize)
-### Success (recommend consistent)
-- `{ status, message, data }` (TBD)
+### Success (recommended)
+- `{ status, message, data }`
 
-### Error (recommend consistent)
-- `{ message, errors?, error_code? }` (TBD)
+### Error (recommended)
+- `{ message, errors?, error_code? }`
 
 ---
 
 ## Endpoints (CONFIRMED)
 
-### Auth (`/api/v1`, namespace: `App\Modules\Auth\Controllers`)
+### Auth (`/api/v1`)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | Register | POST | `/api/v1/register` | No |
@@ -66,7 +67,16 @@ Must support:
 | Login with OTP | POST | `/api/v1/auth/otp/login` | No |
 | Apply as Provider | POST | `/api/v1/auth/apply-as-provider` | Yes |
 
-### Admin (`/api/v1/admin`, namespace: `App\Modules\Admin\Controllers`, filter: `auth`)
+---
+
+### Dashboard (`/api/v1/dashboard`, filter: `auth`)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Get dashboard stats | GET | `/api/v1/dashboard/stats` | Yes |
+
+---
+
+### Admin (`/api/v1/admin`, filter: `auth`)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | List provider applications | GET | `/api/v1/admin/provider-applications` | Yes |
@@ -81,7 +91,7 @@ Must support:
 | Get provider earnings | GET | `/api/v1/admin/providers/{id}/earnings` | Yes |
 | Get provider payouts | GET | `/api/v1/admin/providers/{id}/payouts` | Yes |
 
-#### Admin — Categories & Services (filter: auth)
+#### Admin — Categories & Services
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | List services by category | GET | `/api/v1/admin/categories/{categoryId}/services` | Yes |
@@ -89,15 +99,7 @@ Must support:
 | Update service | PUT | `/api/v1/admin/services/{serviceId}` | Yes |
 | Delete service | DELETE | `/api/v1/admin/services/{serviceId}` | Yes |
 
-#### Admin — Categories resource routes (expected)
-Resource: `categories` under `/api/v1/admin`
-- `GET /api/v1/admin/categories`
-- `GET /api/v1/admin/categories/{id}`
-- `POST /api/v1/admin/categories`
-- `PUT|PATCH /api/v1/admin/categories/{id}`
-- `DELETE /api/v1/admin/categories/{id}`
-
-#### Admin — User management (roles & permissions)
+#### Admin — User management
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | List users | GET | `/api/v1/admin/users` | Yes |
@@ -105,7 +107,9 @@ Resource: `categories` under `/api/v1/admin`
 | Get user roles | GET | `/api/v1/admin/users/{id}/roles` | Yes |
 | Update user roles | PUT | `/api/v1/admin/users/{id}/roles` | Yes |
 
-### Operations (`/api/v1/operations`, namespace: `App\Modules\Operations\Controllers`, filter: `auth`)
+---
+
+### Operations (`/api/v1/operations`, filter: `auth`)
 #### Provider routes
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
@@ -116,6 +120,7 @@ Resource: `categories` under `/api/v1/admin`
 #### Admin routes (within operations)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
+| Get active jobs | GET | `/api/v1/operations/admin/jobs` | Yes |
 | Get pending jobs | GET | `/api/v1/operations/admin/jobs/pending` | Yes |
 | Get job details | GET | `/api/v1/operations/admin/jobs/{jobId}` | Yes |
 | Assign provider to job | POST | `/api/v1/operations/admin/jobs/{jobId}/assign` | Yes |
@@ -123,7 +128,7 @@ Resource: `categories` under `/api/v1/admin`
 
 ---
 
-### System (`/api/v1/system`, namespace: `App\Modules\System\Controllers`, filter: `auth`)
+### System (`/api/v1/system`, filter: `auth`)
 #### Roles
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
@@ -136,8 +141,3 @@ Resource: `categories` under `/api/v1/admin`
 | Get permissions | GET | `/api/v1/system/permissions` | Yes |
 | Get role permissions | GET | `/api/v1/system/roles/{roleId}/permissions` | Yes |
 | Update role permissions | PUT | `/api/v1/system/roles/{roleId}/permissions` | Yes |
-
----
-
-## Next module to extract (pending)
-- Dashboard routes: `app/Modules/Dashboard/Config/Routes.php`
