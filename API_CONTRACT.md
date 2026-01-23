@@ -23,8 +23,11 @@ This document defines the backend API contract. Flutter must conform to it.
 ## API prefix (confirmed)
 - The backend defines API routes under: `api/v1`
 - Example (Auth module): `$routes->group('api/v1', ...)`
+- Prefix is /api/v1 (backend-defined)
 
-Therefore, Flutter API calls should use:
+-Base URL stays separate from route prefix
+
+-Therefore, Flutter API calls should use:
 - `.../api/v1/<endpoint>`
 
 ---
