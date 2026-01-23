@@ -1,4 +1,4 @@
-# Seamless Call — API Contract (Backend Source of Truth) (v1.1)
+# Seamless Call — API Contract (Backend Source of Truth) (v1.2)
 
 This document defines the backend API contract. Flutter must conform to it.
 
@@ -21,8 +21,9 @@ This document defines the backend API contract. Flutter must conform to it.
 ---
 
 ## API prefixes (CONFIRMED)
-- Auth module routes are grouped under: `/api/v1`
-- Admin module routes are grouped under: `/api/v1/admin` (and protected by `auth` filter)
+- Auth module: `/api/v1`
+- Admin module: `/api/v1/admin` (auth required)
+- Operations module: `/api/v1/operations` (auth required)
 
 ---
 
@@ -38,7 +39,7 @@ Configured in:
 - `app/Config/Cors.php`
 
 Must support:
-- Browser origins for Flutter Web (allowed origins must be explicit)
+- Browser origins for Flutter Web
 - `Authorization` header
 - `OPTIONS` preflight for all API routes
 
@@ -55,7 +56,7 @@ Must support:
 
 ## Endpoints (CONFIRMED)
 
-### Auth (namespace: `App\Modules\Auth\Controllers`)
+### Auth (`/api/v1`, namespace: `App\Modules\Auth\Controllers`)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | Register | POST | `/api/v1/register` | No |
@@ -64,7 +65,7 @@ Must support:
 | Login with OTP | POST | `/api/v1/auth/otp/login` | No |
 | Apply as Provider | POST | `/api/v1/auth/apply-as-provider` | Yes |
 
-### Admin (namespace: `App\Modules\Admin\Controllers`, group filter: `auth`)
+### Admin (`/api/v1/admin`, namespace: `App\Modules\Admin\Controllers`, filter: `auth`)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | List provider applications | GET | `/api/v1/admin/provider-applications` | Yes |
@@ -79,17 +80,52 @@ Must support:
 | Get provider earnings | GET | `/api/v1/admin/providers/{id}/earnings` | Yes |
 | Get provider payouts | GET | `/api/v1/admin/providers/{id}/payouts` | Yes |
 
-#### Admin — Categories & Services
-| Purpose | Method | Path | Auth? | Notes |
-|---|---:|---|---:|---|
-| List services by category | GET | `/api/v1/admin/categories/{categoryId}/services` | Yes | Explicit route (must precede resource routes) |
-| Create service in category | POST | `/api/v1/admin/categories/{categoryId}/services` | Yes |  |
-| Update service | PUT | `/api/v1/admin/services/{serviceId}` | Yes |  |
-| Delete service | DELETE | `/api/v1/admin/services/{serviceId}` | Yes |  |
+#### Admin — Categories & Services (filter: auth)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| List services by category | GET | `/api/v1/admin/categories/{categoryId}/services` | Yes |
+| Create service in category | POST | `/api/v1/admin/categories/{categoryId}/services` | Yes |
+| Update service | PUT | `/api/v1/admin/services/{serviceId}` | Yes |
+| Delete service | DELETE | `/api/v1/admin/services/{serviceId}` | Yes |
 
-#### Admin — Categories resource (CI4 resource routes)
-Resource: `categories` via `CategoryController` under `/api/v1/admin`
-
-Typical generated routes (confirm controller supports):
+#### Admin — Categories resource routes (expected)
+Resource: `categories` under `/api/v1/admin`
 - `GET /api/v1/admin/categories`
-- `GET /api/v1/admin/categ
+- `GET /api/v1/admin/categories/{id}`
+- `POST /api/v1/admin/categories`
+- `PUT|PATCH /api/v1/admin/categories/{id}`
+- `DELETE /api/v1/admin/categories/{id}`
+
+#### Admin — User management (roles & permissions)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| List users | GET | `/api/v1/admin/users` | Yes |
+| Update user | PUT | `/api/v1/admin/users/{id}` | Yes |
+| Get user roles | GET | `/api/v1/admin/users/{id}/roles` | Yes |
+| Update user roles | PUT | `/api/v1/admin/users/{id}/roles` | Yes |
+
+### Operations (`/api/v1/operations`, namespace: `App\Modules\Operations\Controllers`, filter: `auth`)
+#### Provider routes
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Get provider job details | GET | `/api/v1/operations/provider/jobs/{jobId}` | Yes |
+| Update provider job status | PUT | `/api/v1/operations/provider/jobs/{jobId}/status` | Yes |
+| Get provider active jobs | GET | `/api/v1/operations/provider/jobs` | Yes |
+
+#### Admin routes (within operations)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| Get pending jobs | GET | `/api/v1/operations/admin/jobs/pending` | Yes |
+| Get job details | GET | `/api/v1/operations/admin/jobs/{jobId}` | Yes |
+| Assign provider to job | POST | `/api/v1/operations/admin/jobs/{jobId}/assign` | Yes |
+| Get available providers | GET | `/api/v1/operations/admin/providers/available` | Yes |
+
+> NOTE  
+> `GET /admin/jobs` is currently defined outside the group in the module file as pasted.
+> It should be moved into the `/api/v1/operations` group to avoid a broken/ambiguous route.
+
+---
+
+## Next modules to extract (pending)
+- Dashboard routes: `app/Modules/Dashboard/Config/Routes.php`
+- System routes: `app/Modules/System/Config/Routes.php`
