@@ -2,49 +2,69 @@
 
 This document defines the backend API contract. Flutter must conform to it.
 
-## Routing authority
-- Routes live in: `app/Config/Routes.php`
-- Modules exist in: `app/Modules/` (Admin, Auth, Dashboard, Operations, System)
-- Filters configuration: `app/Config/Filters.php`
-- CORS configuration: `app/Config/Cors.php`
+---
 
-## Hosting modes to keep explicit
-1) **Public web root mode**
-- DocumentRoot: `<repo>/public`
-- Base URL: `http://<host>/`
-- Paths: `/api/v1/...` (verify in Routes.php)
+## Routing authority (AUTHORITATIVE)
+- Root router: `app/Config/Routes.php`
+  - Loads module route files:
+    - `app/Modules/Auth/Config/Routes.php`
+    - `app/Modules/Dashboard/Config/Routes.php`
+    - `app/Modules/Admin/Config/Routes.php`
+    - `app/Modules/System/Config/Routes.php`
+    - `app/Modules/Operations/Config/Routes.php`
 
-2) **Repo root mode**
-- DocumentRoot: `<repo>/`
-- Rewrite must forward to `public/index.php`
-- Base URL may look like: `http://<host>/seamless_call/`
-- Paths still: `/api/v1/...` (verify in Routes.php)
+### Root routes (non-API)
+- `GET /`
+- `GET /testotp/send`
+- `POST /auth/oauth`
+
+---
+
+## API prefix (confirmed)
+- The backend defines API routes under: `api/v1`
+- Example (Auth module): `$routes->group('api/v1', ...)`
+
+Therefore, Flutter API calls should use:
+- `.../api/v1/<endpoint>`
+
+---
 
 ## Authentication (contract)
 - Scheme: Bearer token (`Authorization: Bearer <token>`)
-- Unauthorized: HTTP 401
-- Error shape: define and keep consistent (see below)
+- Auth-protected routes use filter: `auth`
+- Unauthorized response: HTTP 401
+
+### Token invalid/expired
+- Must return 401 consistently
+- Error body shape must be kept stable (define below)
+
+---
 
 ## CORS (contract)
-Configured in `app/Config/Cors.php`:
-- Must allow required origins for Flutter Web
-- Must allow `Authorization` header
-- Must allow `OPTIONS` preflight for API routes
+Configured in:
+- `app/Config/Cors.php`
 
-## Response envelopes (define and enforce)
-### Success (TBD — fill from real responses)
-- `data`: TBD
-- `message`: TBD
-- `status`: TBD
+Must support:
+- Browser origins for Flutter Web (allowed origins must be explicit)
+- `Authorization` header
+- `OPTIONS` preflight for all `/api/v1/*` routes
 
-### Error (TBD — fill from real responses)
-- `message`: TBD
-- `errors`: TBD
-- `error`: TBD
-- `error_code`: TBD (recommended)
+---
 
-## Endpoints (populate from actual routes)
-| Domain | Purpose | Method | Path | Auth? | Request | Success Response | Error Response |
-|---|---|---:|---|---:|---|---|---|
-| Auth | Login | POST | `/api/v1/login` | No | `{ email_or_phone, password }` | TBD | TBD |
-| Auth | Logout | POST | `/api/v1/logout` | Yes | none | TBD | TBD |
+## Response envelopes (TBD — normalize)
+### Success
+- Envelope shape: TBD (recommend consistent `{ status, message, data }`)
+
+### Error
+- Envelope shape: TBD (recommend consistent `{ message, errors?, error_code? }`)
+
+---
+
+## Endpoints (CONFIRMED from Auth module)
+
+| Domain | Purpose | Method | Path | Auth? | Notes |
+|---|---|---:|---|---:|---|
+| Auth | Register | POST | `/api/v1/register` | No | namespace: `App\Modules\Auth\Controllers` |
+| Auth | Login (password) | POST | `/api/v1/login` | No |  |
+| Auth | Request login OTP | POST | `/api/v1/auth/otp/request` | No |  |
+| Auth | Login with
