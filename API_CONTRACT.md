@@ -1,4 +1,4 @@
-# Seamless Call — API Contract (Backend Source of Truth) (v1)
+# Seamless Call — API Contract (Backend Source of Truth) (v1.1)
 
 This document defines the backend API contract. Flutter must conform to it.
 
@@ -20,15 +20,9 @@ This document defines the backend API contract. Flutter must conform to it.
 
 ---
 
-## API prefix (confirmed)
-- The backend defines API routes under: `api/v1`
-- Example (Auth module): `$routes->group('api/v1', ...)`
-- Prefix is /api/v1 (backend-defined)
-
--Base URL stays separate from route prefix
-
--Therefore, Flutter API calls should use:
-- `.../api/v1/<endpoint>`
+## API prefixes (CONFIRMED)
+- Auth module routes are grouped under: `/api/v1`
+- Admin module routes are grouped under: `/api/v1/admin` (and protected by `auth` filter)
 
 ---
 
@@ -36,10 +30,6 @@ This document defines the backend API contract. Flutter must conform to it.
 - Scheme: Bearer token (`Authorization: Bearer <token>`)
 - Auth-protected routes use filter: `auth`
 - Unauthorized response: HTTP 401
-
-### Token invalid/expired
-- Must return 401 consistently
-- Error body shape must be kept stable (define below)
 
 ---
 
@@ -50,28 +40,22 @@ Configured in:
 Must support:
 - Browser origins for Flutter Web (allowed origins must be explicit)
 - `Authorization` header
-- `OPTIONS` preflight for all `/api/v1/*` routes
+- `OPTIONS` preflight for all API routes
 
 ---
 
 ## Response envelopes (TBD — normalize)
-### Success
-- Envelope shape: TBD (recommend consistent `{ status, message, data }`)
+### Success (recommend consistent)
+- `{ status, message, data }` (TBD)
 
-### Error
-- Envelope shape: TBD (recommend consistent `{ message, errors?, error_code? }`)
+### Error (recommend consistent)
+- `{ message, errors?, error_code? }` (TBD)
 
 ---
 
-## Endpoints (CONFIRMED from Auth module)
+## Endpoints (CONFIRMED)
 
-| Domain | Purpose | Method | Path | Auth? | Notes |
-|---|---|---:|---|---:|---|
-| Auth | Register | POST | `/api/v1/register` | No | namespace: `App\Modules\Auth\Controllers` |
-| Auth | Login (password) | POST | `/api/v1/login` | No |  |
-| Auth | Request login OTP | POST | `/api/v1/auth/otp/request` | No |  |
-| Auth | Login with
-## Confirmed Auth endpoints (from backend module routes)
+### Auth (namespace: `App\Modules\Auth\Controllers`)
 | Purpose | Method | Path | Auth? |
 |---|---:|---|---:|
 | Register | POST | `/api/v1/register` | No |
@@ -79,3 +63,33 @@ Must support:
 | Request login OTP | POST | `/api/v1/auth/otp/request` | No |
 | Login with OTP | POST | `/api/v1/auth/otp/login` | No |
 | Apply as Provider | POST | `/api/v1/auth/apply-as-provider` | Yes |
+
+### Admin (namespace: `App\Modules\Admin\Controllers`, group filter: `auth`)
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| List provider applications | GET | `/api/v1/admin/provider-applications` | Yes |
+| Approve/reject provider application | POST | `/api/v1/admin/provider-applications/status` | Yes |
+| Create admin user | POST | `/api/v1/admin/users` | Yes |
+| Get customers | GET | `/api/v1/admin/customers` | Yes |
+| Get providers | GET | `/api/v1/admin/providers` | Yes |
+| Get user details | GET | `/api/v1/admin/users/{id}` | Yes |
+| Get user ledger | GET | `/api/v1/admin/users/{id}/ledger` | Yes |
+| Get user refunds | GET | `/api/v1/admin/users/{id}/refunds` | Yes |
+| Get user activity log | GET | `/api/v1/admin/users/{id}/activity` | Yes |
+| Get provider earnings | GET | `/api/v1/admin/providers/{id}/earnings` | Yes |
+| Get provider payouts | GET | `/api/v1/admin/providers/{id}/payouts` | Yes |
+
+#### Admin — Categories & Services
+| Purpose | Method | Path | Auth? | Notes |
+|---|---:|---|---:|---|
+| List services by category | GET | `/api/v1/admin/categories/{categoryId}/services` | Yes | Explicit route (must precede resource routes) |
+| Create service in category | POST | `/api/v1/admin/categories/{categoryId}/services` | Yes |  |
+| Update service | PUT | `/api/v1/admin/services/{serviceId}` | Yes |  |
+| Delete service | DELETE | `/api/v1/admin/services/{serviceId}` | Yes |  |
+
+#### Admin — Categories resource (CI4 resource routes)
+Resource: `categories` via `CategoryController` under `/api/v1/admin`
+
+Typical generated routes (confirm controller supports):
+- `GET /api/v1/admin/categories`
+- `GET /api/v1/admin/categ
