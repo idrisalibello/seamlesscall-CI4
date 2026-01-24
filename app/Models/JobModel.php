@@ -23,6 +23,9 @@ class JobModel extends Model
         'completed_at',
         'cancelled_at',
         'assigned_at',
+        'escalation_reason',
+        'escalated_at',
+        'escalated_by',
     ];
 
     protected $useTimestamps = true;
@@ -60,11 +63,11 @@ class JobModel extends Model
     public function getProviderActiveJobs(int $providerId): array
     {
         return $this->select('jobs.*, users.name as customer_name, services.name as service_name')
-                    ->join('users', 'users.id = jobs.customer_id')
-                    ->join('services', 'services.id = jobs.service_id')
-                    ->where('jobs.provider_id', $providerId)
-                    ->whereIn('jobs.status', ['active', 'scheduled'])
-                    ->findAll();
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.provider_id', $providerId)
+            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->findAll();
     }
 
     /**
@@ -73,12 +76,12 @@ class JobModel extends Model
     public function getProviderJobDetails(int $jobId, int $providerId): ?array
     {
         return $this->select('jobs.*, users.name as customer_name, users.phone as customer_phone, services.name as service_name')
-                    ->join('users', 'users.id = jobs.customer_id')
-                    ->join('services', 'services.id = jobs.service_id')
-                    ->where('jobs.id', $jobId)
-                    ->where('jobs.provider_id', $providerId)
-                    ->whereIn('jobs.status', ['active', 'scheduled'])
-                    ->first();
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.id', $jobId)
+            ->where('jobs.provider_id', $providerId)
+            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->first();
     }
 
     /**
@@ -88,11 +91,11 @@ class JobModel extends Model
     public function getAdminActiveJobs(): array
     {
         return $this->select('jobs.*, users.name as customer_name, providers.name as provider_name, services.name as service_name')
-                    ->join('users', 'users.id = jobs.customer_id')
-                    ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
-                    ->join('services', 'services.id = jobs.service_id')
-                    ->whereIn('jobs.status', ['active', 'scheduled'])
-                    ->findAll();
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->findAll();
     }
 
     /**
@@ -101,11 +104,11 @@ class JobModel extends Model
     public function getAdminPendingJobs(): array
     {
         return $this->select('jobs.*, users.name as customer_name, users.phone as customer_phone, providers.name as provider_name, providers.phone as provider_phone, services.name as service_name')
-                    ->join('users', 'users.id = jobs.customer_id')
-                    ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
-                    ->join('services', 'services.id = jobs.service_id')
-                    ->where('jobs.status', 'pending')
-                    ->findAll();
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.status', 'pending')
+            ->findAll();
     }
 
     /**
@@ -114,28 +117,36 @@ class JobModel extends Model
     public function getAdminJobDetails(int $jobId): ?array
     {
         return $this->select('jobs.*, users.name as customer_name, users.phone as customer_phone, providers.name as provider_name, providers.phone as provider_phone, services.name as service_name')
-                    ->join('users', 'users.id = jobs.customer_id')
-                    ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
-                    ->join('services', 'services.id = jobs.service_id')
-                    ->where('jobs.id', $jobId)
-                    // Admins should be able to see details of jobs regardless of their status.
-                    ->first();
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.id', $jobId)
+            // Admins should be able to see details of jobs regardless of their status.
+            ->first();
     }
 
     /**
      * Update job status and relevant timestamps.
      */
-    public function updateJobStatus(int $jobId, string $status, ?int $userId = null): bool
-    {
+    public function updateJobStatus(
+        int $jobId,
+        string $status,
+        ?int $userId = null,
+        ?string $escalationReason = null
+    ): bool {
         $data = ['status' => $status];
 
         if ($status === 'completed') {
             $data['completed_at'] = date('Y-m-d H:i:s');
         } elseif ($status === 'cancelled') {
             $data['cancelled_at'] = date('Y-m-d H:i:s');
+        } elseif ($status === 'escalated') {
+            // Persist escalation metadata
+            $data['escalation_reason'] = $escalationReason;
+            $data['escalated_at'] = date('Y-m-d H:i:s');
+            $data['escalated_by'] = $userId;
         }
-        
-        // This is crucial: only update if the job exists and matches criteria for update
+
         return $this->update($jobId, $data);
     }
 }

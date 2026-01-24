@@ -111,6 +111,17 @@ class OperationsController extends BaseController
             return $this->failValidationErrors($this->validator->getErrors());
         }
         $status = $input['status'];
+        $escalationReason = null;
+
+        if ($status === 'escalated') {
+            $escalationReason = $input['escalation_reason'] ?? null;
+            if (!$escalationReason || trim($escalationReason) === '') {
+                return $this->failValidationErrors([
+                    'escalation_reason' => 'Escalation reason is required.'
+                ]);
+            }
+        }
+
 
         try {
             $job = $this->jobModel->find($jobId);
@@ -132,7 +143,7 @@ class OperationsController extends BaseController
                 return $this->failUnauthorized('Access denied. Invalid role.');
             }
 
-            if ($this->jobModel->updateJobStatus($jobId, $status)) {
+            if ($this->jobModel->updateJobStatus($jobId, $status, (int)$user->id, $escalationReason)) {
                 return $this->respondUpdated(['message' => 'Job status updated successfully.']);
             } else {
                 return $this->failServerError('Failed to update job status.');
@@ -179,7 +190,7 @@ class OperationsController extends BaseController
             if (!$provider || $provider['role'] !== 'Provider') {
                 return $this->failNotFound('Provider not found or not a valid provider role.');
             }
-            
+
             // Update job with provider_id, assigned_at, and set status to 'active'
             $data = [
                 'provider_id' => $providerId,
@@ -196,7 +207,7 @@ class OperationsController extends BaseController
     }
 
     // Admin endpoints for viewing all active jobs and any job details
-    
+
     /**
      * Get a list of active jobs for Admin.
      * Accessible by Admin role.
@@ -275,10 +286,10 @@ class OperationsController extends BaseController
         try {
             // Fetch providers that are active and have the 'Provider' role
             $providers = $this->userModel
-                                ->select('id, name')
-                                ->where('role', 'Provider')
-                                ->where('status', 'active') // Assuming 'status' field exists in UserModel
-                                ->findAll();
+                ->select('id, name')
+                ->where('role', 'Provider')
+                ->where('status', 'active') // Assuming 'status' field exists in UserModel
+                ->findAll();
 
             return $this->respond(['data' => $providers]);
         } catch (Exception $e) {
