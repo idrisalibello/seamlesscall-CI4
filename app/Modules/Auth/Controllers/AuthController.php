@@ -83,11 +83,15 @@ class AuthController extends BaseController
      */
     public function applyAsProvider()
     {
-        $user = $this->request->user;
-        if (!$user || !isset($user->id)) {
+        $payload = $this->request->auth_payload ?? null;
+
+        if (!$payload || !isset($payload['id'])) {
             return $this->failUnauthorized('Authentication required');
         }
-        $userId = $user->id;
+
+        $userId = (int) $payload['id'];
+        $role   = $payload['role'] ?? null;
+
 
         $rules = [
             'company_name' => 'permit_empty|min_length[2]',
@@ -119,11 +123,18 @@ class AuthController extends BaseController
      */
     public function approveProvider($providerId)
     {
-        $admin = $this->request->user;
-        if (!$admin || !isset($admin->id)) {
+        $payload = $this->request->auth_payload ?? null;
+
+        if (!$payload || !isset($payload['id'])) {
             return $this->failUnauthorized('Authentication required');
         }
-        $adminId = $admin->id;
+
+        $adminId = (int) $payload['id'];
+
+        // Optional but recommended: enforce Admin role here
+        if (($payload['role'] ?? null) !== 'Admin') {
+            return $this->failForbidden('Admin access required');
+        }
 
 
         try {
@@ -143,11 +154,30 @@ class AuthController extends BaseController
     public function createProvider()
     {
         $data = $this->request->getPost();
-        $admin = $this->request->user;
-        if (!$admin || !isset($admin->id)) {
+        $payload = $this->request->auth_payload ?? null;
+
+        if (!$payload || !isset($payload['id'])) {
             return $this->failUnauthorized('Authentication required');
         }
-        $adminId = $admin->id;
+
+        $adminId = (int) $payload['id'];
+
+        // Optional but recommended: enforce Admin role here
+        if (($payload['role'] ?? null) !== 'Admin') {
+            return $this->failForbidden('Admin access required');
+        }
+        $payload = $this->request->auth_payload ?? null;
+
+        if (!$payload || !isset($payload['id'])) {
+            return $this->failUnauthorized('Authentication required');
+        }
+
+        $adminId = (int) $payload['id'];
+
+        // Optional but recommended: enforce Admin role here
+        if (($payload['role'] ?? null) !== 'Admin') {
+            return $this->failForbidden('Admin access required');
+        }
 
         try {
             $this->authService->createProvider($data, $adminId);
@@ -166,11 +196,18 @@ class AuthController extends BaseController
     public function createAdmin()
     {
         $data = $this->request->getPost();
-        $admin = $this->request->user;
-        if (!$admin || !isset($admin->id)) {
+        $payload = $this->request->auth_payload ?? null;
+
+        if (!$payload || !isset($payload['id'])) {
             return $this->failUnauthorized('Authentication required');
         }
-        $adminId = $admin->id;
+
+        $adminId = (int) $payload['id'];
+
+        // Optional but recommended: enforce Admin role here
+        if (($payload['role'] ?? null) !== 'Admin') {
+            return $this->failForbidden('Admin access required');
+        }
 
         try {
             $this->authService->createAdmin($data, $adminId);
@@ -270,15 +307,14 @@ class AuthController extends BaseController
         }
     }
     public function loginWithGoogle()
-{
-    $data = $this->request->getJSON(true);
+    {
+        $data = $this->request->getJSON(true);
 
-    try {
-        $result = $this->authService->loginWithGoogle($data);
-        return $this->respond(['status' => 'success', 'data' => $result]);
-    } catch (\Exception $e) {
-        return $this->fail($e->getMessage());
+        try {
+            $result = $this->authService->loginWithGoogle($data);
+            return $this->respond(['status' => 'success', 'data' => $result]);
+        } catch (\Exception $e) {
+            return $this->fail($e->getMessage());
+        }
     }
-}
-
 }

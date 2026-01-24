@@ -96,6 +96,19 @@ class JobModel extends Model
     }
 
     /**
+     * Get a list of pending jobs for admin.
+     */
+    public function getAdminPendingJobs(): array
+    {
+        return $this->select('jobs.*, users.name as customer_name, users.phone as customer_phone, providers.name as provider_name, providers.phone as provider_phone, services.name as service_name')
+                    ->join('users', 'users.id = jobs.customer_id')
+                    ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+                    ->join('services', 'services.id = jobs.service_id')
+                    ->where('jobs.status', 'pending')
+                    ->findAll();
+    }
+
+    /**
      * Get job details by ID for an admin, ensuring it's an active/scheduled job.
      */
     public function getAdminJobDetails(int $jobId): ?array
@@ -105,7 +118,7 @@ class JobModel extends Model
                     ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
                     ->join('services', 'services.id = jobs.service_id')
                     ->where('jobs.id', $jobId)
-                    ->whereIn('jobs.status', ['active', 'scheduled'])
+                    // Admins should be able to see details of jobs regardless of their status.
                     ->first();
     }
 
@@ -120,10 +133,6 @@ class JobModel extends Model
             $data['completed_at'] = date('Y-m-d H:i:s');
         } elseif ($status === 'cancelled') {
             $data['cancelled_at'] = date('Y-m-d H:i:s');
-        } elseif ($status === 'assigned' && $userId !== null) { // Custom status for assignment, not a job status enum value
-            $data['provider_id'] = $userId;
-            $data['assigned_at'] = date('Y-m-d H:i:s');
-            // Do not change job status here, assignment is an action not a status
         }
         
         // This is crucial: only update if the job exists and matches criteria for update

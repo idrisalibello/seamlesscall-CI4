@@ -11,7 +11,7 @@ class Email extends BaseConfig
     public string $protocol   = 'smtp';
     public string $SMTPHost   = 'smtp.gmail.com';
     public string $SMTPUser   = 'seamlesscallapp@gmail.com';
-    public string $SMTPPass   = 'nkrbtiehzzpxdedc'; // remove spaces!
+    public string $SMTPPass   = 'nkrbtiehzzpxdedc'; //remove spaces!
     public int    $SMTPPort   = 587;
     public string $SMTPCrypto = 'tls';
     public int    $SMTPTimeout = 30;

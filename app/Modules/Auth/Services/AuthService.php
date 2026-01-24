@@ -118,48 +118,75 @@ class AuthService
     }
 
     public function sendLoginOtpToAllChannels(string $identifier): array
-    {
-        $identifier = $this->normalizeIdentifier($identifier);
-        $user = $this->getUserByEmailOrPhone($identifier);
+{
+    $identifier = $this->normalizeIdentifier($identifier);
+    $user = $this->getUserByEmailOrPhone($identifier);
 
-        if (!$user) {
-            throw new \Exception('User not found');
-        }
-
-        $otp = random_int(100000, 999999);
-        $otpString = (string) $otp;
-
-        // Store OTP for both channels
-        $this->_storeOtp((int)$user['id'], 'login', 'email', $otpString);
-        $this->_storeOtp((int)$user['id'], 'login', 'whatsapp', $otpString);
-
-        $channels = [];
-
-        // Send Email
-        if (!empty($user['email'])) {
-            $email = \Config\Services::email();
-            $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-            $email->setTo($user['email']);
-            $email->setSubject('Your Seamless Call Verification Code');
-            $email->setMessage("Your verification code is: $otpString. This code expires in 5 minutes.");
-            if ($email->send()) $channels[] = 'email';
-        }
-
-        // Send WhatsApp
-        if (!empty($user['phone'])) {
-            $phone = $this->normalizePhone($user['phone']);
-            if ($this->whatsAppService->sendOtp($phone, $otpString)) {
-                $channels[] = 'whatsapp';
-            }
-        }
-
-        if (empty($channels)) {
-            throw new \Exception('Failed to send OTP to any channel');
-        }
-
-        return $channels;
+    if (!$user) {
+        throw new \Exception('User not found');
     }
 
+    $otp = random_int(100000, 999999);
+    $otpString = (string) $otp;
+
+    // Store OTP for both channels
+    $this->_storeOtp((int)$user['id'], 'login', 'email', $otpString);
+    $this->_storeOtp((int)$user['id'], 'login', 'whatsapp', $otpString);
+
+    $channels = [];
+
+    // Send Email
+    if (!empty($user['email'])) {
+        log_message('debug', '[OTP][EMAIL] Attempting email OTP send. user_id={id} to={to}', [
+            'id' => $user['id'] ?? null,
+            'to' => $user['email'],
+        ]);
+
+        $email = \Config\Services::email();
+        $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
+        $email->setTo($user['email']);
+        $email->setSubject('Your Seamless Call Verification Code');
+        $email->setMessage("Your verification code is: $otpString. This code expires in 5 minutes.");
+
+        try {
+            $sent = $email->send();
+            log_message('debug', '[OTP][EMAIL] CI Email send() returned: {sent}', [
+                'sent' => $sent ? 'true' : 'false',
+            ]);
+
+            if (!$sent) {
+                $debug = $email->printDebugger(['headers', 'subject', 'body']);
+                log_message('error', '[OTP][EMAIL] CI Email debugger output: {debug}', [
+                    'debug' => $debug,
+                ]);
+            }
+
+            if ($sent) {
+                $channels[] = 'email';
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[OTP][EMAIL] Exception during email send: {msg} in {file}:{line}', [
+                'msg'  => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+        }
+    }
+
+    // Send WhatsApp
+    if (!empty($user['phone'])) {
+        $phone = $this->normalizePhone($user['phone']);
+        if ($this->whatsAppService->sendOtp($phone, $otpString)) {
+            $channels[] = 'whatsapp';
+        }
+    }
+
+    if (empty($channels)) {
+        throw new \Exception('Failed to send OTP to any channel');
+    }
+
+    return $channels;
+}
 
     // --- Provider/Admin methods remain unchanged ---
     public function createProvider(array $data, int $adminId)

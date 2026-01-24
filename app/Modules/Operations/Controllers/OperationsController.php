@@ -96,14 +96,15 @@ class OperationsController extends BaseController
      */
     public function updateJobStatus(int $jobId)
     {
-        $providerUser = service('request')->auth_payload;
-        if (!$providerUser || !isset($providerUser->id) || $providerUser->role !== 'Provider') {
-            return $this->failUnauthorized('Access denied. Providers only.');
+        $user = service('request')->auth_payload;
+        if (!$user || !isset($user->id)) {
+            return $this->failUnauthorized('Access denied. Authentication required.');
         }
 
         $input = $this->request->getJSON(true);
         $rules = [
-            'status' => 'required|in_list[active,completed,cancelled,escalated]',
+            // Admin can change status from pending. Provider only operates on active/scheduled.
+            'status' => 'required|in_list[pending,active,completed,cancelled,escalated]',
         ];
 
         if (!$this->validate($rules)) {
@@ -112,10 +113,23 @@ class OperationsController extends BaseController
         $status = $input['status'];
 
         try {
-            // Ensure the job belongs to the provider before updating
             $job = $this->jobModel->find($jobId);
-            if (!$job || $job['provider_id'] !== (int)$providerUser->id) {
-                return $this->failUnauthorized('You are not authorized to update this job.');
+            if (!$job) {
+                return $this->failNotFound('Job not found.');
+            }
+
+            // Authorization logic
+            if ($user->role === 'Admin') {
+                // Admin can update any job
+            } elseif ($user->role === 'Provider') {
+                // Provider can only update their assigned jobs
+                if ($job['provider_id'] !== (int)$user->id) {
+                    return $this->failUnauthorized('You are not authorized to update this job.');
+                }
+                // Providers can only transition from 'active' or 'scheduled' for some actions.
+                // For simplicity, for now, they can update their assigned jobs to completed/cancelled/escalated.
+            } else {
+                return $this->failUnauthorized('Access denied. Invalid role.');
             }
 
             if ($this->jobModel->updateJobStatus($jobId, $status)) {
@@ -166,10 +180,13 @@ class OperationsController extends BaseController
                 return $this->failNotFound('Provider not found or not a valid provider role.');
             }
             
-            // Use updateJobStatus helper in JobModel, but pass providerId to update assigned_at
-            $this->jobModel->updateJobStatus($jobId, 'active', $providerId);
-            $this->jobModel->update($jobId, ['provider_id' => $providerId, 'assigned_at' => date('Y-m-d H:i:s'), 'status' => 'active']);
-
+            // Update job with provider_id, assigned_at, and set status to 'active'
+            $data = [
+                'provider_id' => $providerId,
+                'assigned_at' => date('Y-m-d H:i:s'),
+                'status' => 'active'
+            ];
+            $this->jobModel->update($jobId, $data);
 
             return $this->respondUpdated(['message' => 'Job assigned successfully.']);
         } catch (Exception $e) {
@@ -240,6 +257,32 @@ class OperationsController extends BaseController
             return $this->respond(['data' => $this->formatOutput([$job])[0]]);
         } catch (Exception $e) {
             log_message('error', '[OperationsController] getAdminJobDetails: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    /**
+     * Get a list of available providers.
+     * Accessible by Admin role.
+     */
+    public function getAvailableProviders()
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        try {
+            // Fetch providers that are active and have the 'Provider' role
+            $providers = $this->userModel
+                                ->select('id, name')
+                                ->where('role', 'Provider')
+                                ->where('status', 'active') // Assuming 'status' field exists in UserModel
+                                ->findAll();
+
+            return $this->respond(['data' => $providers]);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] getAvailableProviders: ' . $e->getMessage());
             return $this->failServerError('An unexpected error occurred.');
         }
     }
