@@ -291,6 +291,46 @@ class OperationsController extends BaseController
     }
 
     /**
+     * Get a list of cancelled jobs for Admin.
+     * Accessible by Admin role.
+     */
+    public function getAdminCancelledJobs()
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        try {
+            $jobs = $this->jobModel->getAdminCancelledJobs();
+            return $this->respond(['data' => $this->formatOutput($jobs)]);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] getAdminCancelledJobs: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    /**
+     * Get a list of escalated jobs for Admin.
+     * Accessible by Admin role.
+     */
+    public function getAdminEscalatedJobs()
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        try {
+            $jobs = $this->jobModel->getAdminEscalatedJobs();
+            return $this->respond(['data' => $this->formatOutput($jobs)]);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] getAdminEscalatedJobs: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    /**
      * Get details of any specific job for Admin.
      * Accessible by Admin role.
      */

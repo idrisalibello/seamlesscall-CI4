@@ -110,6 +110,32 @@ class JobModel extends Model
             ->where('jobs.status', 'scheduled')
             ->findAll();
     }
+
+    /**
+     * Get cancelled jobs for admin.
+     */
+    public function getAdminCancelledJobs(): array
+    {
+        return $this->select('jobs.*, users.name as customer_name, providers.name as provider_name, services.name as service_name')
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.status', 'cancelled')
+            ->findAll();
+    }
+
+    /**
+     * Get escalated jobs for admin.
+     */
+    public function getAdminEscalatedJobs(): array
+    {
+        return $this->select('jobs.*, users.name as customer_name, providers.name as provider_name, services.name as service_name')
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.status', 'escalated')
+            ->findAll();
+    }
     
     /**
      * Get scheduled jobs for a provider.
