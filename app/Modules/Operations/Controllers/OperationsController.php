@@ -65,6 +65,27 @@ class OperationsController extends BaseController
             return $this->failServerError('An unexpected error occurred.');
         }
     }
+    
+    /**
+     * Get a list of scheduled jobs for the authenticated provider.
+     * Accessible by Provider role.
+     */
+    public function getProviderScheduledJobs()
+    {
+        $providerUser = service('request')->auth_payload;
+        if (!$providerUser || !isset($providerUser->id) || $providerUser->role !== 'Provider') {
+            return $this->failUnauthorized('Access denied. Providers only.');
+        }
+
+        try {
+            $jobs = $this->jobModel->getProviderScheduledJobs((int)$providerUser->id);
+            return $this->respond(['data' => $this->formatOutput($jobs)]);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] getProviderScheduledJobs: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
 
     /**
      * Get details of a specific active job for the authenticated provider.
@@ -227,6 +248,27 @@ class OperationsController extends BaseController
             return $this->failServerError('An unexpected error occurred.');
         }
     }
+    
+    /**
+     * Get a list of scheduled jobs for Admin.
+     * Accessible by Admin role.
+     */
+    public function getAdminScheduledJobs()
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        try {
+            $jobs = $this->jobModel->getAdminScheduledJobs(); // Changed method call
+            return $this->respond(['data' => $this->formatOutput($jobs)]);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] getAdminScheduledJobs: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
 
     /**
      * Get a list of pending jobs for Admin.

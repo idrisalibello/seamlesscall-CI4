@@ -58,7 +58,7 @@ class JobModel extends Model
 
     /**
      * Get active jobs for a provider.
-     * An "active" job could be 'active' or 'scheduled'.
+     * An "active" job is strictly 'active'.
      */
     public function getProviderActiveJobs(int $providerId): array
     {
@@ -66,12 +66,12 @@ class JobModel extends Model
             ->join('users', 'users.id = jobs.customer_id')
             ->join('services', 'services.id = jobs.service_id')
             ->where('jobs.provider_id', $providerId)
-            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->where('jobs.status', 'active')
             ->findAll();
     }
 
     /**
-     * Get job details by ID for a provider, ensuring it's an active/scheduled job.
+     * Get job details by ID for a provider, ensuring it's an active job.
      */
     public function getProviderJobDetails(int $jobId, int $providerId): ?array
     {
@@ -80,13 +80,13 @@ class JobModel extends Model
             ->join('services', 'services.id = jobs.service_id')
             ->where('jobs.id', $jobId)
             ->where('jobs.provider_id', $providerId)
-            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->where('jobs.status', 'active')
             ->first();
     }
 
     /**
      * Get active jobs for admin.
-     * An "active" job could be 'active' or 'scheduled'.
+     * An "active" job is strictly 'active'.
      */
     public function getAdminActiveJobs(): array
     {
@@ -94,7 +94,33 @@ class JobModel extends Model
             ->join('users', 'users.id = jobs.customer_id')
             ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
             ->join('services', 'services.id = jobs.service_id')
-            ->whereIn('jobs.status', ['active', 'scheduled'])
+            ->where('jobs.status', 'active')
+            ->findAll();
+    }
+    
+    /**
+     * Get scheduled jobs for admin.
+     */
+    public function getAdminScheduledJobs(): array
+    {
+        return $this->select('jobs.*, users.name as customer_name, providers.name as provider_name, services.name as service_name')
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('users as providers', 'providers.id = jobs.provider_id', 'left') // Left join for optional provider
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.status', 'scheduled')
+            ->findAll();
+    }
+    
+    /**
+     * Get scheduled jobs for a provider.
+     */
+    public function getProviderScheduledJobs(int $providerId): array
+    {
+        return $this->select('jobs.*, users.name as customer_name, services.name as service_name')
+            ->join('users', 'users.id = jobs.customer_id')
+            ->join('services', 'services.id = jobs.service_id')
+            ->where('jobs.provider_id', $providerId)
+            ->where('jobs.status', 'scheduled')
             ->findAll();
     }
 
@@ -112,7 +138,7 @@ class JobModel extends Model
     }
 
     /**
-     * Get job details by ID for an admin, ensuring it's an active/scheduled job.
+     * Get job details by ID for an admin.
      */
     public function getAdminJobDetails(int $jobId): ?array
     {
