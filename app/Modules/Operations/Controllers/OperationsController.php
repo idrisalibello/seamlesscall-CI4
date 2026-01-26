@@ -197,12 +197,12 @@ class OperationsController extends BaseController
         $providerId = $input['provider_id'];
 
         try {
-            // Verify job exists and is not already assigned/completed/cancelled
+            // Verify job exists and is not already assigned/completed
             $job = $this->jobModel->find($jobId);
             if (!$job) {
                 return $this->failNotFound('Job not found.');
             }
-            if (!in_array($job['status'], ['pending', 'scheduled'])) {
+            if (!in_array($job['status'], ['pending', 'scheduled', 'cancelled', 'escalated'])) {
                 return $this->failForbidden('Job cannot be assigned in its current status.');
             }
 
@@ -212,17 +212,76 @@ class OperationsController extends BaseController
                 return $this->failNotFound('Provider not found or not a valid provider role.');
             }
 
-            // Update job with provider_id, assigned_at, and set status to 'active'
+            // Update job with provider_id, assigned_at, set status to 'active', and clear terminal state fields
             $data = [
-                'provider_id' => $providerId,
-                'assigned_at' => date('Y-m-d H:i:s'),
-                'status' => 'active'
+                'provider_id'       => $providerId,
+                'assigned_at'       => date('Y-m-d H:i:s'),
+                'status'            => 'active',
+                'cancelled_at'      => null,
+                'escalation_reason' => null,
+                'escalated_at'      => null,
+                'escalated_by'      => null,
             ];
             $this->jobModel->update($jobId, $data);
 
             return $this->respondUpdated(['message' => 'Job assigned successfully.']);
         } catch (Exception $e) {
             log_message('error', '[OperationsController] assignJob: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    /**
+     * Resolve an escalated job.
+     * Accessible by Admin role.
+     */
+    public function resolveEscalation(int $jobId)
+    {
+        $adminUser = service('request')->auth_payload;
+        if (!$adminUser || $adminUser->role !== 'Admin') {
+            return $this->failUnauthorized('Access denied. Admins only.');
+        }
+
+        $input = $this->request->getJSON(true);
+        $rules = [
+            'resolution_note' => 'required',
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->failValidationErrors($this->validator->getErrors());
+        }
+
+        try {
+            $job = $this->jobModel->find($jobId);
+            if (!$job) {
+                return $this->failNotFound('Job not found.');
+            }
+
+            if ($job['status'] !== 'escalated') {
+                return $this->failForbidden('This job is not currently escalated.');
+            }
+
+            $data = [
+                'status'            => 'active',
+                'escalation_reason' => null,
+                'escalated_at'      => null,
+                'escalated_by'      => null,
+            ];
+
+            $this->jobModel->update($jobId, $data);
+
+            // Log the resolution note
+            $logMessage = sprintf(
+                'Job ID %d escalation resolved by Admin ID %d. Note: "%s"',
+                $jobId,
+                $adminUser->id,
+                $input['resolution_note']
+            );
+            log_message('info', $logMessage);
+
+            return $this->respondUpdated(['message' => 'Escalation resolved successfully. Job is now active.']);
+        } catch (Exception $e) {
+            log_message('error', '[OperationsController] resolveEscalation: ' . $e->getMessage());
             return $this->failServerError('An unexpected error occurred.');
         }
     }

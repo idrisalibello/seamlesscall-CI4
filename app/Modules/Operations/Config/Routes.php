@@ -24,5 +24,6 @@ $routes->group('api/v1/operations', [
     $routes->get('admin/jobs/escalated', 'OperationsController::getAdminEscalatedJobs');
     $routes->get('admin/jobs/(:num)', 'OperationsController::getAdminJobDetails/$1');
     $routes->post('admin/jobs/(:num)/assign', 'OperationsController::assignJob/$1');
+    $routes->put('admin/jobs/(:num)/resolve-escalation', 'OperationsController::resolveEscalation/$1');
     $routes->get('admin/providers/available', 'OperationsController::getAvailableProviders');
 });
