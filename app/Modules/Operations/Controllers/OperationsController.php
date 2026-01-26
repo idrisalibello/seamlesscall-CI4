@@ -37,10 +37,13 @@ class OperationsController extends BaseController
                 $row['customer_id'] = (int)$row['customer_id'];
             }
             if (isset($row['provider_id'])) {
-                $row['provider_id'] = (int)$row['provider_id'];
+                $row['provider_id'] = $row['provider_id'] === null ? null : (int)$row['provider_id'];
             }
             if (isset($row['service_id'])) {
                 $row['service_id'] = (int)$row['service_id'];
+            }
+            if (isset($row['escalated_by'])) {
+                $row['escalated_by'] = $row['escalated_by'] === null ? null : (int)$row['escalated_by'];
             }
             return $row;
         }, $data);
