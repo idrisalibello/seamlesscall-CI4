@@ -26,7 +26,8 @@ class UserModel extends Model
         'is_company',
         'provider_applied_at',
         'approved_by',
-        'approved_at'
+        'approved_at',
+        'kyc_status'
     ];
 
     protected $useTimestamps = true;

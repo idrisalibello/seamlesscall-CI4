@@ -107,6 +107,15 @@ Must support:
 | Get user roles | GET | `/api/v1/admin/users/{id}/roles` | Yes |
 | Update user roles | PUT | `/api/v1/admin/users/{id}/roles` | Yes |
 
+#### Admin — Verification Queue
+| Purpose | Method | Path | Auth? |
+|---|---:|---|---:|
+| List pending verification cases | GET | `/api/v1/admin/verification-queue` | Yes |
+| Get verification case details | GET | `/api/v1/admin/verification-queue/{id}` | Yes |
+| Approve verification case | POST | `/api/v1/admin/verification-queue/{id}/approve` | Yes |
+| Reject verification case | POST | `/api/v1/admin/verification-queue/{id}/reject` | Yes (reason in body) |
+| Escalate verification case | POST | `/api/v1/admin/verification-queue/{id}/escalate` | Yes (reason in body) |
+
 ---
 
 ### Operations (`/api/v1/operations`, filter: `auth`)

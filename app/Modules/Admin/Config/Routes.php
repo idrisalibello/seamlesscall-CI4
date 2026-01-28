@@ -33,5 +33,12 @@ $routes->group('api/v1/admin', [
     $routes->put('users/(:num)', 'AdminController::updateUser/$1');
     $routes->get('users/(:num)/roles', 'AdminController::getUserRoles/$1');
     $routes->put('users/(:num)/roles', 'AdminController::updateUserRoles/$1');
+
+    // Verification Queue
+    $routes->get('verification-queue', 'VerificationQueueController::index');
+    $routes->get('verification-queue/(:num)', 'VerificationQueueController::show/$1');
+    $routes->post('verification-queue/(:num)/approve', 'VerificationQueueController::approve/$1');
+    $routes->post('verification-queue/(:num)/reject', 'VerificationQueueController::reject/$1');
+    $routes->post('verification-queue/(:num)/escalate', 'VerificationQueueController::escalate/$1');
 });
 
