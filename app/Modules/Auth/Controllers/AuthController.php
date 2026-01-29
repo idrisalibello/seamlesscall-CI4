@@ -83,7 +83,7 @@ class AuthController extends BaseController
      */
     public function applyAsProvider()
     {
-        $payload = $this->request->auth_payload ?? null;
+        $payload = (array) ($this->request->auth_payload ?? []);
 
         if (!$payload || !isset($payload['id'])) {
             return $this->failUnauthorized('Authentication required');
@@ -103,7 +103,7 @@ class AuthController extends BaseController
             return $this->failValidationErrors($this->validator->getErrors());
         }
 
-        $data = $this->request->getJSON(true);
+        $data = (array) $this->request->getJSON(true);
 
         try {
             $this->authService->applyAsProvider((int) $userId, $data);

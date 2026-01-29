@@ -32,25 +32,25 @@ class VerificationQueueController extends BaseController
      */
     public function index()
     {
-        $pendingCases = $this->verificationCaseModel
+        $pendingCases = $this->userModel
             ->select('
-                verification_cases.id,
-                verification_cases.user_id,
-                verification_cases.status,
-                verification_cases.created_at,
-                users.name,
-                users.email,
-                users.phone,
-                users.kyc_status,
-                users.provider_status,
-                users.is_provider
-            ')
-            ->join('users', 'users.id = verification_cases.user_id') // Join on user_id, not provider_id
-            ->where('verification_cases.status', 'pending')
+            users.id,
+            users.id AS provider_id,
+            users.name,
+            users.email,
+            users.phone,
+            users.kyc_status,
+            users.provider_status,
+            users.is_provider,
+            users.created_at
+        ')
+            ->where('users.kyc_status', 'Pending')
+            ->where('users.provider_status', 'approved')
             ->findAll();
 
         return $this->response->setJSON($pendingCases);
     }
+
 
     /**
      * Returns JSON detail for a specific verification case + joined user summary.
