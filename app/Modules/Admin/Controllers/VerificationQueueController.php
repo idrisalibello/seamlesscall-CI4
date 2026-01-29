@@ -59,25 +59,21 @@ class VerificationQueueController extends BaseController
      */
     public function show($id)
     {
-        $case = $this->verificationCaseModel
-            ->select('
-                verification_cases.*,
-                users.name,
-                users.email,
-                users.phone,
-                users.kyc_status,
-                users.provider_status,
-                users.is_provider
-            ')
-            ->join('users', 'users.id = verification_cases.user_id') // Join on user_id
-            ->find($id);
+        $userId = (int) $id;
 
-        if (!$case) {
-            return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
+        $user = $this->userModel
+            ->select('users.id,users.id AS provider_id, users.name, users.email, users.phone, users.kyc_status, users.provider_status, users.is_provider')
+            ->where('users.id', $userId)
+            ->where('users.is_provider', 1)
+            ->first();
+
+        if (!$user) {
+           return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
         }
 
-        return $this->response->setJSON($case);
+        return $this->response->setJSON($user);
     }
+
 
     /**
      * Approves a verification case.
@@ -85,31 +81,21 @@ class VerificationQueueController extends BaseController
      * @param int $id The ID of the verification case.
      */
     public function approve($id)
-    {
-        $case = $this->verificationCaseModel->find($id);
+{
+    $userId = (int) $id;
 
-        if (!$case) {
-            return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
-        }
-
-        $adminUserId = $this->getAdminUserId();
-        $now = Time::now()->toDateTimeString();
-
-        // Update verification_cases
-        $this->verificationCaseModel->update($id, [
-            'status'     => 'verified',
-            'decided_by' => $adminUserId,
-            'decided_at' => $now,
-            'updated_at' => $now,
-        ]);
-
-        // Update users.kyc_status
-        $this->userModel->update($case['user_id'], [
-            'kyc_status' => 'Verified'
-        ]);
-
-        return $this->response->setJSON(['message' => 'Verification case approved successfully.']);
+    $user = $this->userModel->find($userId);
+    if (!$user) {
+        return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
     }
+
+    $this->userModel->update($userId, [
+        'kyc_status' => 'Verified',
+    ]);
+
+    return $this->response->setJSON(['message' => 'Verification case approved successfully.']);
+}
+
 
     /**
      * Rejects a verification case.
