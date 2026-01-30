@@ -17,6 +17,12 @@ $routes->group('api/v1/admin', [
     $routes->get('providers/(:num)/earnings', 'AdminController::getProviderEarnings/$1');
     $routes->get('providers/(:num)/payouts', 'AdminController::getProviderPayouts/$1');
 
+    // Provider Performance, Ratings, and Disputes
+    $routes->get('providers/performance', 'ProviderPerformanceController::getOverallProviderPerformance');
+    $routes->get('providers/(:num)/performance', 'ProviderPerformanceController::getProviderPerformance/$1');
+    $routes->get('providers/(:num)/ratings', 'ProviderPerformanceController::getProviderRatings/$1');
+    $routes->get('providers/(:num)/disputes', 'ProviderPerformanceController::getProviderDisputes/$1');
+
     // Services GET route (moved before categories resource for correct precedence)
     $routes->get('categories/(:num)/services', 'ServiceController::index/$1');
 

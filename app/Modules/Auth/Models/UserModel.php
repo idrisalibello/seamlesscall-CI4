@@ -20,6 +20,7 @@ class UserModel extends Model
         'company_name',
          'services', 
         'location',
+        'decision_reason',
         'is_company',
         'provider_applied_at'];
     

@@ -8,6 +8,10 @@ class CreateKycVerificationCases extends Migration
 {
     public function up()
     {
+        if ($this->db->tableExists('verification_cases')) {
+            return;
+        }
+
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',

@@ -62,13 +62,13 @@ class VerificationQueueController extends BaseController
         $userId = (int) $id;
 
         $user = $this->userModel
-            ->select('users.id,users.id AS provider_id, users.name, users.email, users.phone, users.kyc_status, users.provider_status, users.is_provider')
+            ->select('users.id,users.id AS provider_id, users.name, users.email, users.phone, users.kyc_status,users.decision_reason, users.provider_status, users.is_provider')
             ->where('users.id', $userId)
             ->where('users.is_provider', 1)
             ->first();
 
         if (!$user) {
-           return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
+            return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
         }
 
         return $this->response->setJSON($user);
@@ -81,20 +81,22 @@ class VerificationQueueController extends BaseController
      * @param int $id The ID of the verification case.
      */
     public function approve($id)
-{
-    $userId = (int) $id;
+    {
+        $userId = (int) $id;
 
-    $user = $this->userModel->find($userId);
-    if (!$user) {
-        return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
+        $user = $this->userModel->find($userId);
+        if (!$user) {
+            return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
+        }
+        $payload = $this->request->getJSON(true) ?? [];
+
+
+        $this->userModel->update($userId, [
+            'kyc_status' => 'Verified',
+        ]);
+
+        return $this->response->setJSON(['message' => 'Verification case approved successfully.']);
     }
-
-    $this->userModel->update($userId, [
-        'kyc_status' => 'Verified',
-    ]);
-
-    return $this->response->setJSON(['message' => 'Verification case approved successfully.']);
-}
 
 
     /**
@@ -104,35 +106,35 @@ class VerificationQueueController extends BaseController
      */
     public function reject($id)
     {
-        $case = $this->verificationCaseModel->find($id);
+        $userId = (int) $id;
 
-        if (!$case) {
+        $user = $this->userModel->find($userId);
+        if (!$user) {
             return $this->response->setStatusCode(404)->setJSON(['message' => 'Verification case not found.']);
         }
 
-        $reason = $this->request->getVar('reason');
-        if (empty($reason)) {
-            return $this->response->setStatusCode(400)->setJSON(['message' => 'Rejection reason is required.']);
+        $payload = $this->request->getJSON(true) ?? [];
+
+        $reason = $payload['reason']
+            ?? $payload['decision_reason']
+            ?? $this->request->getVar('reason')
+            ?? $this->request->getVar('decision_reason');
+
+        $reason = is_string($reason) ? trim($reason) : '';
+
+        if ($reason === '') {
+            return $this->response
+                ->setStatusCode(400)
+                ->setJSON(['message' => 'Rejection reason is required.']);
         }
 
-        $adminUserId = $this->getAdminUserId();
-        $now = Time::now()->toDateTimeString();
 
-        // Update verification_cases
-        $this->verificationCaseModel->update($id, [
-            'status'          => 'rejected',
-            'decision_reason' => $reason,
-            'decided_by'      => $adminUserId,
-            'decided_at'      => $now,
-            'updated_at'      => $now,
+        $this->userModel->update($userId, [
+            'kyc_status' => 'Rejected',
+            'decision_reason' => 'Reason is: ' . $reason
         ]);
 
-        // Update users.kyc_status
-        $this->userModel->update($case['user_id'], [
-            'kyc_status' => 'Rejected'
-        ]);
-
-        return $this->response->setJSON(['message' => 'Verification case rejected successfully.']);
+        return $this->response->setJSON(['message' => 'Verification case rejected.']);
     }
 
     /**
