@@ -46,5 +46,11 @@ $routes->group('api/v1/admin', [
     $routes->post('verification-queue/(:num)/approve', 'VerificationQueueController::approve/$1');
     $routes->post('verification-queue/(:num)/reject', 'VerificationQueueController::reject/$1');
     $routes->post('verification-queue/(:num)/escalate', 'VerificationQueueController::escalate/$1');
-});
 
+    //$routes->get('providers/(:num)/ratings', 'ProviderPerformanceController::ratings/$1');
+    $routes->get('providers/performance', 'ProviderPerformanceController::getOverallProviderPerformance');
+    $routes->get('providers/(:num)/performance', 'ProviderPerformanceController::getProviderPerformance/$1');
+
+    $routes->get('providers/(:num)/ratings', 'ProviderPerformanceController::getProviderRatings/$1');
+    $routes->get('providers/(:num)/disputes', 'ProviderPerformanceController::getProviderDisputes/$1');
+});

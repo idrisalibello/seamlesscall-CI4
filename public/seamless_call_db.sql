@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Jan 29, 2026 at 05:48 PM
+-- Generation Time: Jan 30, 2026 at 02:22 PM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -188,7 +188,11 @@ INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`
 (13, '2026-01-18-134113', 'App\\Database\\Migrations\\CreateRolesAndPermissionsTables', 'default', 'App', 1768743695, 10),
 (14, '2026-01-18-151031', 'App\\Database\\Migrations\\CreateUserRolesTable', 'default', 'App', 1768749074, 11),
 (15, '2026-01-18-202850', 'App\\Database\\Migrations\\CreateJobsTable', 'default', 'App', 1768768256, 12),
-(17, '2026-01-27-193113', 'App\\Database\\Migrations\\CreateVerificationCases', 'default', 'App', 1769546899, 13);
+(17, '2026-01-27-193113', 'App\\Database\\Migrations\\CreateVerificationCases', 'default', 'App', 1769546899, 13),
+(18, '2026-01-27-205345', 'App\\Database\\Migrations\\CreateKycVerificationCases', 'default', 'App', 1769754167, 14),
+(19, '2026-01-27-230824', 'App\\Database\\Migrations\\RenameProviderIdToUserIdInVerificationCases', 'default', 'App', 1769754167, 14),
+(20, '2026-01-29-174800', 'App\\Database\\Migrations\\CreateProviderRatingsTable', 'default', 'App', 1769754288, 15),
+(21, '2026-01-29-174801', 'App\\Database\\Migrations\\CreateProviderDisputesTable', 'default', 'App', 1769754288, 15);
 
 -- --------------------------------------------------------
 
@@ -564,7 +568,15 @@ INSERT INTO `otps` (`id`, `user_id`, `otp_hash`, `channel`, `expires_at`, `creat
 (347, 34, '$2y$10$JrVrDxbw/17PSRq208S1zuG21igfSnX42CxOCg7haL15er6SlD10O', 'email', '2026-01-29 16:02:06', '2026-01-29 14:57:06', '2026-01-29 15:57:06', '2026-01-29 15:57:06', '10.227.175.59', 'login'),
 (348, 34, '$2y$10$R6MMCxOK6TX6MH3DYGX5Eeu/sHB5/C27GGAglc0MPqhd.0.NFGAiC', 'whatsapp', '2026-01-29 16:02:06', '2026-01-29 14:57:06', '2026-01-29 15:58:11', '2026-01-29 15:58:11', '10.227.175.59', 'login'),
 (349, 34, '$2y$10$UXeTHBTLIgZPmhnu1oA6TunejCZemuRgg4SR1Sj3WVy0klAhO0g/C', 'email', '2026-01-29 17:12:42', '2026-01-29 16:07:42', '2026-01-29 17:07:42', '2026-01-29 17:07:42', '10.227.175.59', 'login'),
-(350, 34, '$2y$10$c/lOWNw2imiD4PNLrHWVteKUmsggu4u1GDNRcVFmqlpTPcVqAJNW6', 'whatsapp', '2026-01-29 17:12:42', '2026-01-29 16:07:42', '2026-01-29 17:08:56', '2026-01-29 17:08:56', '10.227.175.59', 'login');
+(350, 34, '$2y$10$c/lOWNw2imiD4PNLrHWVteKUmsggu4u1GDNRcVFmqlpTPcVqAJNW6', 'whatsapp', '2026-01-29 17:12:42', '2026-01-29 16:07:42', '2026-01-29 17:08:56', '2026-01-29 17:08:56', '10.227.175.59', 'login'),
+(351, 34, '$2y$10$zVDh1Bkv5Yq03oqeuTrugenJRnppMBg38XR0zUoQS6O85OoByWEmC', 'email', '2026-01-29 18:17:36', '2026-01-29 17:12:36', '2026-01-29 18:12:36', '2026-01-29 18:12:36', '10.227.175.59', 'login'),
+(352, 34, '$2y$10$ct.r8LdaSSfeZl/7BzeaYu5hddD8WTQJe.y7vSad0zf0uF2/yQON2', 'whatsapp', '2026-01-29 18:17:36', '2026-01-29 17:12:36', '2026-01-29 18:13:55', '2026-01-29 18:13:55', '10.227.175.59', 'login'),
+(353, 34, '$2y$10$i8dZk3Plo22V1LLari.aVOPEvEoE/6XPjxG384ZhZLLozmgLdRsAW', 'email', '2026-01-30 07:57:50', '2026-01-30 06:52:50', '2026-01-30 07:52:50', '2026-01-30 07:52:50', '10.190.170.59', 'login'),
+(354, 34, '$2y$10$Hw2yaUtcFyLbbFy88kHQh.8VTad457M9LINCHfe/2pA4MDmygz1ne', 'whatsapp', '2026-01-30 07:57:50', '2026-01-30 06:52:50', '2026-01-30 07:53:17', '2026-01-30 07:53:17', '10.190.170.59', 'login'),
+(355, 34, '$2y$10$VqebY9FaZUh35rZq2P2D4u8wINBW6I3fZ/VNZx2XCJW/SfX6WDzka', 'email', '2026-01-30 08:11:35', '2026-01-30 07:06:35', '2026-01-30 08:06:35', '2026-01-30 08:06:35', '10.190.170.59', 'login'),
+(356, 34, '$2y$10$B9jVkN5UjxIzVS9e643tWeooULtlS21bZVEJ/9U6EpoucjnytE2o2', 'whatsapp', '2026-01-30 08:11:35', '2026-01-30 07:06:35', '2026-01-30 08:07:20', '2026-01-30 08:07:20', '10.190.170.59', 'login'),
+(357, 34, '$2y$10$YVIO17Lf/.FaAJxBL6z6LO/vCvDK8fYhsBndjuYUMMoGuHJFQlRKu', 'email', '2026-01-30 13:39:44', '2026-01-30 12:34:44', '2026-01-30 13:34:44', '2026-01-30 13:34:44', '10.190.170.59', 'login'),
+(358, 34, '$2y$10$a48ciW.QbYoUHVIK/1LdXOpaMlM1AKbqEscEvI59WKqSIitaaHkPG', 'whatsapp', '2026-01-30 13:39:44', '2026-01-30 12:34:44', '2026-01-30 13:36:34', '2026-01-30 13:36:34', '10.190.170.59', 'login');
 
 -- --------------------------------------------------------
 
@@ -621,6 +633,41 @@ INSERT INTO `permissions` (`id`, `group_name`, `permission_name`, `description`,
 (9, 'Finance', 'view-ledger', 'View financial ledger', NULL, NULL),
 (10, 'Finance', 'manage-payouts', 'Manage provider payouts', NULL, NULL),
 (11, 'Finance', 'manage-refunds', 'Manage customer refunds', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `provider_disputes`
+--
+
+CREATE TABLE `provider_disputes` (
+  `id` int UNSIGNED NOT NULL,
+  `job_id` int UNSIGNED NOT NULL,
+  `provider_id` int NOT NULL,
+  `raised_by` int DEFAULT NULL,
+  `status` enum('pending','resolved','dismissed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `reason` text COLLATE utf8mb4_general_ci NOT NULL,
+  `resolved_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `provider_ratings`
+--
+
+CREATE TABLE `provider_ratings` (
+  `id` int UNSIGNED NOT NULL,
+  `job_id` int UNSIGNED NOT NULL,
+  `provider_id` int NOT NULL,
+  `customer_id` int DEFAULT NULL,
+  `rating` tinyint(1) NOT NULL,
+  `comment` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -758,10 +805,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `role`, `kyc_status`, `decision_reason`, `created_at`, `updated_at`, `status`, `is_provider`, `provider_status`, `approved_by`, `approved_at`, `company_name`, `is_company`, `location`, `services`, `provider_applied_at`, `google_id`) VALUES
-(31, 'Sadiya Hassan', 'seamlesscallservices@gmail.com', '+2348012345678', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Provider', 'Rejected', '', '2026-01-07 12:43:24', '2026-01-29 16:45:33', 'active', 1, 'approved', 34, '2026-01-28 13:31:16', 'msnsnsn', 0, 'sgsgsgs', NULL, '2026-01-28 12:51:13', NULL),
-(33, 'Provider Gunnu', 'prov@gmail.com', '+2348088888888', '$2y$10$c6A/P9..w81BpCB1e/G75upaJhlpkvnheXZnP1K9YkqzWCmutu40a', 'Provider', 'Pending', '', '2026-01-07 23:08:15', '2026-01-29 17:44:05', 'pending', 1, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
+(31, 'Sadiya Hassan', 'seamlesscallservices@gmail.com', '+2348012345678', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Provider', 'Verified', '', '2026-01-07 12:43:24', '2026-01-30 07:24:00', 'active', 1, 'approved', 34, '2026-01-28 13:31:16', 'msnsnsn', 0, 'sgsgsgs', NULL, '2026-01-28 12:51:13', NULL),
+(33, 'Provider Gunnu', 'prov@gmail.com', '+2348088888888', '$2y$10$c6A/P9..w81BpCB1e/G75upaJhlpkvnheXZnP1K9YkqzWCmutu40a', 'Provider', 'Rejected', '', '2026-01-07 23:08:15', '2026-01-29 17:03:56', 'active', 1, 'approved', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (34, 'IDRIS BELLO', 'idrisalibello@gmail.com', '+2348036967483', '$2y$10$iA4amEDQUAW7Z6LWf5bAJuwPxPm16is/lJPXidVfpbmcBHFslPqPq', 'Admin', 'Pending', '', '2026-01-10 12:44:34', '2026-01-11 12:51:46', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
-(35, 'Khadijah Ismail', 'luvlykhad@gmail.com', '+2348064684365', '$2y$10$MLdtvvhnEVk6KxoqNvYGte559X/U/lAFAlXIiTIOem9E7dj1AFuAq', 'Provider', 'Pending', '', '2026-01-11 11:51:20', '2026-01-29 17:44:52', 'active', 1, 'approved', 34, '2026-01-15 19:29:49', 'Home Services', 0, 'Kaduna', NULL, '2026-01-15 14:49:56', NULL),
+(35, 'Khadijah Ismail', 'luvlykhad@gmail.com', '+2348064684365', '$2y$10$MLdtvvhnEVk6KxoqNvYGte559X/U/lAFAlXIiTIOem9E7dj1AFuAq', 'Provider', 'Pending', '', '2026-01-11 11:51:20', '2026-01-30 07:59:17', 'active', 1, 'approved', 34, '2026-01-15 19:29:49', 'Home Services', 0, 'Kaduna', NULL, '2026-01-15 14:49:56', NULL),
 (36, 'Sumaya Ayuba', 'seamlesscallapp1@gmail.com', '+2348022222222', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Customer', 'Pending', '', '2026-01-12 10:20:35', '2026-01-15 20:24:28', 'active', 0, 'rejected', 34, '2026-01-15 19:30:32', '', 0, 'Kaduna', NULL, '2026-01-15 18:17:50', NULL),
 (37, 'Sumaya Ayuba', 'seamlesscallap@gmail.com', '+2348022222334', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Provider', 'Pending', '', '2026-01-12 10:20:35', '2026-01-12 10:20:35', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (38, 'Ismail Ali Bello', 'seammlesscallapp1@gmail.com', '+2348044444444', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Admin', 'Pending', '', '2026-01-15 19:27:57', '2026-01-15 20:43:54', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
@@ -875,6 +922,24 @@ ALTER TABLE `permissions`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `provider_disputes`
+--
+ALTER TABLE `provider_disputes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `provider_disputes_job_id_foreign` (`job_id`),
+  ADD KEY `provider_disputes_provider_id_foreign` (`provider_id`),
+  ADD KEY `provider_disputes_raised_by_foreign` (`raised_by`);
+
+--
+-- Indexes for table `provider_ratings`
+--
+ALTER TABLE `provider_ratings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `job_id` (`job_id`),
+  ADD KEY `provider_ratings_provider_id_foreign` (`provider_id`),
+  ADD KEY `provider_ratings_customer_id_foreign` (`customer_id`);
+
+--
 -- Indexes for table `refunds`
 --
 ALTER TABLE `refunds`
@@ -966,13 +1031,13 @@ ALTER TABLE `ledger`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `otps`
 --
 ALTER TABLE `otps`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=351;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=359;
 
 --
 -- AUTO_INCREMENT for table `payouts`
@@ -985,6 +1050,18 @@ ALTER TABLE `payouts`
 --
 ALTER TABLE `permissions`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `provider_disputes`
+--
+ALTER TABLE `provider_disputes`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `provider_ratings`
+--
+ALTER TABLE `provider_ratings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `refunds`
@@ -1069,6 +1146,22 @@ ALTER TABLE `otps`
 --
 ALTER TABLE `payouts`
   ADD CONSTRAINT `payouts_provider_id_foreign` FOREIGN KEY (`provider_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `provider_disputes`
+--
+ALTER TABLE `provider_disputes`
+  ADD CONSTRAINT `provider_disputes_job_id_foreign` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `provider_disputes_provider_id_foreign` FOREIGN KEY (`provider_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `provider_disputes_raised_by_foreign` FOREIGN KEY (`raised_by`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE SET NULL;
+
+--
+-- Constraints for table `provider_ratings`
+--
+ALTER TABLE `provider_ratings`
+  ADD CONSTRAINT `provider_ratings_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `provider_ratings_job_id_foreign` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `provider_ratings_provider_id_foreign` FOREIGN KEY (`provider_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `refunds`

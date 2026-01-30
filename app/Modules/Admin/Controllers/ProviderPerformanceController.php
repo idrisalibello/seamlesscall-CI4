@@ -5,7 +5,7 @@ namespace App\Modules\Admin\Controllers;
 use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
 use App\Models\UserModel;
-use App\Models\JobsModel;
+use App\Models\JobModel;
 use App\Models\ProviderRatingsModel;
 use App\Models\ProviderDisputesModel;
 use CodeIgniter\I18n\Time; // For date handling
@@ -23,7 +23,7 @@ class ProviderPerformanceController extends BaseController
     public function __construct()
     {
         $this->userModel = new UserModel();
-        $this->jobsModel = new JobsModel();
+        $this->jobsModel = new JobModel();
         $this->providerRatingsModel = new ProviderRatingsModel();
         $this->providerDisputesModel = new ProviderDisputesModel();
     }
@@ -64,7 +64,7 @@ class ProviderPerformanceController extends BaseController
         if ($from->isAfter($to)) {
             $from = $to->subDays(28); // Reset to default if invalid
         }
-        
+
         return [
             'from' => $from->toDateString(),
             'to'   => $to->toDateString(),
@@ -88,11 +88,13 @@ class ProviderPerformanceController extends BaseController
      */
     protected function getPaginationParams(): array
     {
-        $page = (int) $this->request->getGet('page') ?? 1;
-        $limit = (int) $this->request->getGet('limit') ?? 20; // Default limit 20
-        
+        $page  = (int) ($this->request->getGet('page') ?? 1);
+        $limit = (int) ($this->request->getGet('limit') ?? 20);
+        // Default limit 20
+
         $limit = max(1, min(100, $limit)); // Limit between 1 and 100
         $offset = ($page - 1) * $limit;
+        $page = max(1, $page);
 
         return ['offset' => $offset, 'limit' => $limit];
     }
@@ -110,33 +112,38 @@ class ProviderPerformanceController extends BaseController
 
         while ($currentDate->isBefore($endDate) || $currentDate->toDateString() === $endDate->toDateString()) {
             $bucketStart = $currentDate->toDateString();
-            
+
             if ($bucket === 'week') {
                 $bucketEnd = $currentDate->addDays(6)->toDateString();
                 if (Time::parse($bucketEnd)->isAfter($endDate)) {
                     $bucketEnd = $endDate->toDateString();
                 }
-                $currentDate = $currentDate->addDays(1); // Move to next day after adding 6 days
+                $currentDate = $currentDate->addDays(7); // Move to next day after adding 6 days
             } else { // day
                 $bucketEnd = $currentDate->toDateString();
             }
 
             $jobsInBucket = $this->jobsModel
-                                 ->where('provider_id', $providerId)
-                                 ->groupStart()
-                                     ->where('assigned_at >=', $bucketStart)
-                                     ->where('assigned_at <=', $bucketEnd)
-                                 ->orGroupStart()
-                                     ->where('completed_at >=', $bucketStart)
-                                     ->where('completed_at <=', $bucketEnd)
-                                 ->orGroupStart()
-                                     ->where('cancelled_at >=', $bucketStart)
-                                     ->where('cancelled_at <=', $bucketEnd)
-                                 ->orGroupStart()
-                                     ->where('escalated_at >=', $bucketStart)
-                                     ->where('escalated_at <=', $bucketEnd)
-                                 ->groupEnd()
-                                 ->findAll();
+                ->where('provider_id', $providerId)
+                ->groupStart()
+                ->groupStart()
+                ->where('assigned_at >=', $bucketStart)
+                ->where('assigned_at <=', $bucketEnd)
+                ->groupEnd()
+                ->orGroupStart()
+                ->where('completed_at >=', $bucketStart)
+                ->where('completed_at <=', $bucketEnd)
+                ->groupEnd()
+                ->orGroupStart()
+                ->where('cancelled_at >=', $bucketStart)
+                ->where('cancelled_at <=', $bucketEnd)
+                ->groupEnd()
+                ->orGroupStart()
+                ->where('escalated_at >=', $bucketStart)
+                ->where('escalated_at <=', $bucketEnd)
+                ->groupEnd()
+                ->groupEnd()
+                ->findAll();
 
             $assigned = 0;
             $completed = 0;
@@ -175,6 +182,18 @@ class ProviderPerformanceController extends BaseController
         return $trend;
     }
 
+    // Backward-compatible route targets (Routes.php points here)
+    public function getOverallProviderPerformance()
+    {
+        return $this->index();
+    }
+
+    public function getProviderPerformance($providerId)
+    {
+        return $this->show($providerId);
+    }
+
+
 
     /**
      * List providers performance (paged, default limit 20).
@@ -190,8 +209,8 @@ class ProviderPerformanceController extends BaseController
         $pagination = $this->getPaginationParams();
 
         $providers = $this->userModel->where('is_provider', 1)
-                                     ->orderBy('id', 'ASC')
-                                     ->findAll($pagination['limit'], $pagination['offset']);
+            ->orderBy('id', 'ASC')
+            ->findAll($pagination['limit'], $pagination['offset']);
 
         $totalProviders = $this->userModel->where('is_provider', 1)->countAllResults();
 
@@ -203,39 +222,39 @@ class ProviderPerformanceController extends BaseController
 
             // Calculate metrics for each provider within the date range
             $totalJobs = $this->jobsModel->where('provider_id', $providerId)
-                                         ->where('created_at >=', $dateRange['from'])
-                                         ->where('created_at <=', $dateRange['to'])
-                                         ->countAllResults();
+                // ->where('created_at >=', $dateRange['from'])
+                // ->where('created_at <=', $dateRange['to'])
+                ->countAllResults();
 
             $completedJobs = $this->jobsModel->where('provider_id', $providerId)
-                                             ->where('status', 'completed')
-                                             ->where('completed_at >=', $dateRange['from'])
-                                             ->where('completed_at <=', $dateRange['to'])
-                                             ->countAllResults();
-            
+                ->where('status', 'completed')
+                // ->where('completed_at >=', $dateRange['from'])
+                // ->where('completed_at <=', $dateRange['to'])
+                ->countAllResults();
+
             $cancelledJobs = $this->jobsModel->where('provider_id', $providerId)
-                                             ->where('status', 'cancelled')
-                                             ->where('cancelled_at >=', $dateRange['from'])
-                                             ->where('cancelled_at <=', $dateRange['to'])
-                                             ->countAllResults();
+                ->where('status', 'cancelled')
+                // ->where('cancelled_at >=', $dateRange['from'])
+                // ->where('cancelled_at <=', $dateRange['to'])
+                ->countAllResults();
 
             $escalationsCount = $this->jobsModel->where('provider_id', $providerId)
-                                               ->where('status', 'escalated')
-                                               ->where('escalated_at >=', $dateRange['from'])
-                                               ->where('escalated_at <=', $dateRange['to'])
-                                               ->countAllResults();
+                ->where('status', 'escalated')
+                // ->where('escalated_at >=', $dateRange['from'])
+                // ->where('escalated_at <=', $dateRange['to'])
+                ->countAllResults();
 
             $avgRatingData = $this->providerRatingsModel->where('provider_id', $providerId)
-                                                        ->where('created_at >=', $dateRange['from'])
-                                                        ->where('created_at <=', $dateRange['to'])
-                                                        ->selectAvg('rating', 'avg_rating')
-                                                        ->first();
+                // ->where('created_at >=', $dateRange['from'])
+                // ->where('created_at <=', $dateRange['to'])
+                ->selectAvg('rating', 'avg_rating')
+                ->first();
             $avgRating = $avgRatingData ? (float)$avgRatingData['avg_rating'] : 0.0;
-            
+
             $disputesCount = $this->providerDisputesModel->where('provider_id', $providerId)
-                                                        ->where('created_at >=', $dateRange['from'])
-                                                        ->where('created_at <=', $dateRange['to'])
-                                                        ->countAllResults();
+                // ->where('created_at >=', $dateRange['from'])
+                // ->where('created_at <=', $dateRange['to'])
+                ->countAllResults();
 
             $performanceData[] = [
                 'provider_id'       => (int)$providerId,
@@ -281,40 +300,40 @@ class ProviderPerformanceController extends BaseController
 
         // Summary Metrics
         $totalJobs = $this->jobsModel->where('provider_id', $providerId)
-                                     ->where('created_at >=', $dateRange['from'])
-                                     ->where('created_at <=', $dateRange['to'])
-                                     ->countAllResults();
+            // ->where('created_at >=', $dateRange['from'])
+            //->where('created_at <=', $dateRange['to'])
+            ->countAllResults();
 
         $completedJobs = $this->jobsModel->where('provider_id', $providerId)
-                                         ->where('status', 'completed')
-                                         ->where('completed_at >=', $dateRange['from'])
-                                         ->where('completed_at <=', $dateRange['to'])
-                                         ->countAllResults();
-        
+            ->where('status', 'completed')
+            //->where('completed_at >=', $dateRange['from'])
+            // ->where('completed_at <=', $dateRange['to'])
+            ->countAllResults();
+
         $cancelledJobs = $this->jobsModel->where('provider_id', $providerId)
-                                         ->where('status', 'cancelled')
-                                         ->where('cancelled_at >=', $dateRange['from'])
-                                         ->where('cancelled_at <=', $dateRange['to'])
-                                         ->countAllResults();
+            ->where('status', 'cancelled')
+            //->where('cancelled_at >=', $dateRange['from'])
+            //->where('cancelled_at <=', $dateRange['to'])
+            ->countAllResults();
 
         $escalationsCount = $this->jobsModel->where('provider_id', $providerId)
-                                           ->where('status', 'escalated')
-                                           ->where('escalated_at >=', $dateRange['from'])
-                                           ->where('escalated_at <=', $dateRange['to'])
-                                           ->countAllResults();
+            ->where('status', 'escalated')
+            //->where('escalated_at >=', $dateRange['from'])
+            //->where('escalated_at <=', $dateRange['to'])
+            ->countAllResults();
 
         $avgRatingData = $this->providerRatingsModel->where('provider_id', $providerId)
-                                                    ->where('created_at >=', $dateRange['from'])
-                                                    ->where('created_at <=', $dateRange['to'])
-                                                    ->selectAvg('rating', 'avg_rating')
-                                                    ->first();
+            //->where('created_at >=', $dateRange['from'])
+            //->where('created_at <=', $dateRange['to'])
+            ->selectAvg('rating', 'avg_rating')
+            ->first();
         $avgRating = $avgRatingData ? (float)$avgRatingData['avg_rating'] : 0.0;
-        
+
         $disputesCount = $this->providerDisputesModel->where('provider_id', $providerId)
-                                                    ->where('created_at >=', $dateRange['from'])
-                                                    ->where('created_at <=', $dateRange['to'])
-                                                    ->countAllResults();
-        
+            //->where('created_at >=', $dateRange['from'])
+            //->where('created_at <=', $dateRange['to'])
+            ->countAllResults();
+
         $summaryMetrics = [
             'total_jobs'        => $totalJobs,
             'completed_jobs'    => $completedJobs,
@@ -328,18 +347,31 @@ class ProviderPerformanceController extends BaseController
         $jobTrend = $this->_getJobTrendSeries($providerId, $dateRange, $bucket);
 
         return $this->respond([
-            'provider_identity' => [
-                'id'            => (int)$providerId,
-                'name'          => $provider['name'],
-                'email'         => $provider['email'],
-                'phone'         => $provider['phone'],
-                'kyc_status'    => $provider['kyc_status'],
-                'provider_status' => $provider['provider_status'],
+            'data' => [
+                'provider_identity' => [
+                    'id'              => (int) $providerId,
+                    'name'            => $provider['name'],
+                    'email'           => $provider['email'],
+                    'phone'           => $provider['phone'],
+                    'kyc_status'      => $provider['kyc_status'],
+                    'provider_status' => $provider['provider_status'],
+                ],
+                'summary_metrics'  => $summaryMetrics,
+                'job_trend_series' => $jobTrend,
             ],
-            'summary_metrics' => $summaryMetrics,
-            'job_trend_series' => $jobTrend,
         ]);
     }
+
+    public function getProviderRatings($providerId)
+    {
+        return $this->ratings($providerId);
+    }
+
+    public function getProviderDisputes($providerId)
+    {
+        return $this->disputes($providerId);
+    }
+
 
     /**
      * Get ratings distribution + avg rating for range.
@@ -356,34 +388,45 @@ class ProviderPerformanceController extends BaseController
             return $this->failNotFound('Provider not found or not a registered provider.');
         }
 
-        $dateRange = $this->getDateRange();
+        // OPTIONAL range: only apply if user passes from/to
+        $from = $this->request->getGet('from');
+        $to   = $this->request->getGet('to');
 
-        $ratings = $this->providerRatingsModel
-                        ->where('provider_id', $providerId)
-                        ->where('created_at >=', $dateRange['from'])
-                        ->where('created_at <=', $dateRange['to'])
-                        ->findAll();
+        $builder = $this->providerRatingsModel->where('provider_id', $providerId);
 
-        $totalRatings = count($ratings);
+        if (!empty($from) && !empty($to)) {
+            $dateRange = $this->getDateRange();
+            $builder->where('created_at >=', $dateRange['from'])
+                ->where('created_at <=', $dateRange['to']);
+        }
+
+        $ratings = $builder->findAll();
+
+        $totalRatings  = count($ratings);
         $averageRating = 0.0;
-        $distribution = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+        $distribution  = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
 
         if ($totalRatings > 0) {
-            $sumRatings = 0;
-            foreach ($ratings as $rating) {
-                $sumRatings += $rating['rating'];
-                if (isset($distribution[$rating['rating']])) {
-                    $distribution[$rating['rating']]++;
+            $sum = 0;
+            foreach ($ratings as $r) {
+                $ratingValue = (int)($r['rating'] ?? 0);
+                $sum += $ratingValue;
+                if (isset($distribution[$ratingValue])) {
+                    $distribution[$ratingValue]++;
                 }
             }
-            $averageRating = $sumRatings / $totalRatings;
+            $averageRating = $sum / $totalRatings;
         }
 
         return $this->respond([
-            'avg_rating' => round($averageRating, 2),
-            'distribution' => $distribution,
+            'data' => [
+                'avg_rating'     => round($averageRating, 2),
+                'total_ratings'  => $totalRatings,   // add this for UI clarity
+                'distribution'   => $distribution,
+            ],
         ]);
     }
+
 
     /**
      * List disputes for range (paged).
@@ -400,20 +443,30 @@ class ProviderPerformanceController extends BaseController
             return $this->failNotFound('Provider not found or not a registered provider.');
         }
 
-        $dateRange = $this->getDateRange();
         $pagination = $this->getPaginationParams();
 
-        $disputes = $this->providerDisputesModel
-                          ->where('provider_id', $providerId)
-                          ->where('created_at >=', $dateRange['from'])
-                          ->where('created_at <=', $dateRange['to'])
-                          ->findAll($pagination['limit'], $pagination['offset']);
+        // OPTIONAL range: only apply if user passes from/to
+        $from = $this->request->getGet('from');
+        $to   = $this->request->getGet('to');
 
-        $totalDisputes = $this->providerDisputesModel
-                               ->where('provider_id', $providerId)
-                               ->where('created_at >=', $dateRange['from'])
-                               ->where('created_at <=', $dateRange['to'])
-                               ->countAllResults();
+        $builder = $this->providerDisputesModel->where('provider_id', $providerId);
+
+        if (!empty($from) && !empty($to)) {
+            $dateRange = $this->getDateRange();
+            $builder->where('created_at >=', $dateRange['from'])
+                ->where('created_at <=', $dateRange['to']);
+        }
+
+        $disputes = $builder->findAll($pagination['limit'], $pagination['offset']);
+
+        // count query must re-build (CI builders get “consumed”)
+        $countBuilder = $this->providerDisputesModel->where('provider_id', $providerId);
+        if (!empty($from) && !empty($to)) {
+            $dateRange = $this->getDateRange();
+            $countBuilder->where('created_at >=', $dateRange['from'])
+                ->where('created_at <=', $dateRange['to']);
+        }
+        $totalDisputes = $countBuilder->countAllResults();
 
         return $this->respond([
             'data' => $disputes,
@@ -421,7 +474,7 @@ class ProviderPerformanceController extends BaseController
                 'total' => $totalDisputes,
                 'per_page' => $pagination['limit'],
                 'current_page' => floor($pagination['offset'] / $pagination['limit']) + 1,
-                'last_page' => ceil($totalDisputes / $pagination['limit']),
+                'last_page' => (int) ceil($totalDisputes / $pagination['limit']),
             ],
         ]);
     }
