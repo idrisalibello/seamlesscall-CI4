@@ -309,6 +309,155 @@ class AdminController extends BaseController
 
         return $this->respond(['data' => $this->formatOutput($payouts)]);
     }
+public function getEarningsOverview()
+{
+    $user = service('request')->auth_payload;
+    log_message('debug', 'AdminController: User payload for getEarningsOverview: ' . json_encode($user));
+    if (!$user || !isset($user->role) || $user->role !== 'Admin') {
+        return $this->failUnauthorized('Access denied. Admins only.');
+    }
+
+    $from = $this->request->getGet('from_date'); // YYYY-MM-DD
+    $to   = $this->request->getGet('to_date');   // YYYY-MM-DD
+
+    $page = max(1, (int) ($this->request->getGet('page') ?? 1));
+    $pageSize = (int) ($this->request->getGet('page_size') ?? 20);
+    if (!in_array($pageSize, [20, 50, 100], true)) {
+        $pageSize = 20;
+    }
+    $offset = ($page - 1) * $pageSize;
+
+    // Range is mandatory (UI rule)
+    if (!$from || !$to) {
+        return $this->failValidationErrors('from_date and to_date are required.');
+    }
+
+    $db = db_connect();
+
+    // =========================
+    // Lifetime totals (all time)
+    // =========================
+    $life = $db->table('earnings e')
+        ->select('
+            COALESCE(SUM(e.amount), 0) as total,
+            COALESCE(SUM(e.amount), 0) as completed,
+            0 as pending
+        ')
+        ->get()
+        ->getRowArray();
+
+    $lifetimeTotals = [
+        'total'     => (float) ($life['total'] ?? 0),
+        'completed' => (float) ($life['completed'] ?? 0),
+        'pending'   => (float) ($life['pending'] ?? 0),
+    ];
+
+    // =========================
+    // Range totals (selected range)
+    // =========================
+    $range = $db->table('earnings e')
+        ->select('
+            COALESCE(SUM(e.amount), 0) as total,
+            COALESCE(SUM(e.amount), 0) as completed,
+            0 as pending
+        ')
+        ->where('DATE(e.created_at) >=', $from)
+        ->where('DATE(e.created_at) <=', $to)
+        ->get()
+        ->getRowArray();
+
+    $rangeTotals = [
+        'total'     => (float) ($range['total'] ?? 0),
+        'completed' => (float) ($range['completed'] ?? 0),
+        'pending'   => (float) ($range['pending'] ?? 0),
+    ];
+
+    // =========================
+    // Trend (daily if <= 31 days, else monthly)
+    // =========================
+    $days = (strtotime($to) - strtotime($from)) / 86400;
+    $groupExpr = ($days <= 31)
+        ? 'DATE(e.created_at)'
+        : 'DATE_FORMAT(e.created_at, "%Y-%m")';
+
+    $trendRows = $db->table('earnings e')
+        ->select("$groupExpr as label, COALESCE(SUM(e.amount), 0) as total")
+        ->where('DATE(e.created_at) >=', $from)
+        ->where('DATE(e.created_at) <=', $to)
+        ->groupBy('label')
+        ->orderBy('label', 'ASC')
+        ->get()
+        ->getResultArray();
+
+    $trend = array_map(function ($r) {
+        return [
+            'label' => $r['label'],
+            'total' => (float) $r['total'],
+        ];
+    }, $trendRows);
+
+    // =========================
+    // Rows (paginated)
+    // =========================
+    $rowsBase = $db->table('earnings e')
+        ->select('
+            e.id,
+            e.provider_id,
+            u.name as provider,
+            e.amount,
+            e.description,
+            e.job_id,
+            e.created_at
+        ')
+        ->join('users u', 'u.id = e.provider_id', 'left')
+        ->where('DATE(e.created_at) >=', $from)
+        ->where('DATE(e.created_at) <=', $to);
+
+    // count (clone to avoid builder mutation issues)
+    $totalRows = (clone $rowsBase)->countAllResults();
+
+    $rows = (clone $rowsBase)
+        ->orderBy('e.created_at', 'DESC')
+        ->limit($pageSize, $offset)
+        ->get()
+        ->getResultArray();
+
+    // Normalize to match Flutter table expectations
+    $normalized = array_map(function ($r) {
+        return [
+            'id'        => (int) $r['id'],
+            'date'      => $r['created_at'],
+            'provider'  => $r['provider'] ?? 'Unknown',
+            'amount'    => (float) $r['amount'],
+            'status'    => 'Completed',
+            'reference' => 'EARN-' . $r['id'],
+
+            'provider_id' => (int) $r['provider_id'],
+            'job_id'      => $r['job_id'] !== null ? (int) $r['job_id'] : null,
+            'description' => $r['description'],
+            'created_at'  => $r['created_at'],
+        ];
+    }, $rows);
+
+    $totalPages = max(1, (int) ceil($totalRows / $pageSize));
+
+    return $this->respond([
+        'data' => [
+            'lifetimeTotals' => $lifetimeTotals,
+            'rangeTotals'    => $rangeTotals,
+            'trend'          => $trend,
+            'rows'           => $normalized,
+            'pagination'     => [
+                'page'        => $page,
+                'page_size'   => $pageSize,
+                'total_rows'  => (int) $totalRows,
+                'total_pages' => $totalPages,
+            ],
+        ],
+    ]);
+}
+
+
 
 
     // NEW ENDPOINTS BELOW (User Management for Roles & Permissions)

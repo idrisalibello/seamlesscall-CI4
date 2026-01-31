@@ -53,4 +53,8 @@ $routes->group('api/v1/admin', [
 
     $routes->get('providers/(:num)/ratings', 'ProviderPerformanceController::getProviderRatings/$1');
     $routes->get('providers/(:num)/disputes', 'ProviderPerformanceController::getProviderDisputes/$1');
-});
+    
+    $routes->get('finance/earnings', 'AdminController::getEarningsOverview');
+
+
+    });
