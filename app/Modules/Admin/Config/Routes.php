@@ -53,8 +53,12 @@ $routes->group('api/v1/admin', [
 
     $routes->get('providers/(:num)/ratings', 'ProviderPerformanceController::getProviderRatings/$1');
     $routes->get('providers/(:num)/disputes', 'ProviderPerformanceController::getProviderDisputes/$1');
-    
+
     $routes->get('finance/earnings', 'AdminController::getEarningsOverview');
 
-
-    });
+    // Finance -> Provider Payouts (global, filter-driven)
+    $routes->get('finance/payouts', 'FinancePayoutsController::index');
+    $routes->get('finance/payouts/summary', 'FinancePayoutsController::summary');
+    $routes->patch('finance/payouts/(:num)/mark-paid', 'FinancePayoutsController::markPaid/$1');
+    $routes->patch('finance/payouts/(:num)/mark-failed', 'FinancePayoutsController::markFailed/$1');
+});
