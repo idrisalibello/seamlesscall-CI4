@@ -2,17 +2,17 @@
 
 namespace App\Filters;
 
+use App\Libraries\JWTHandler;
+use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
-use CodeIgniter\Filters\FilterInterface;
-use App\Libraries\JWTHandler;
 use Config\Services;
 
 class AuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        // ✅ Let CORS preflight through unchallenged
+        // Let CORS preflight through
         if ($request->getMethod() === 'options') {
             return null;
         }
@@ -27,7 +27,16 @@ class AuthFilter implements FilterInterface
 
         $token = $matches[1];
 
-        $jwt = new JWTHandler();
+        try {
+            $jwt = new JWTHandler();
+        } catch (\Throwable $e) {
+            // Don’t crash the app with 500 stack traces.
+            log_message('error', 'JWT init failed: ' . $e->getMessage());
+            return Services::response()
+                ->setStatusCode(500)
+                ->setJSON(['error' => 'Auth misconfiguration: JWT secret not loaded']);
+        }
+
         $payload = $jwt->validateToken($token);
 
         if (!$payload) {
@@ -38,17 +47,13 @@ class AuthFilter implements FilterInterface
 
         log_message('debug', 'AuthFilter Payload: ' . json_encode($payload));
 
-        // Attach user payload to the request object
         $request->auth_payload = $payload;
 
         return null;
     }
 
-    public function after(
-        RequestInterface $request,
-        ResponseInterface $response,
-        $arguments = null
-    ) {
+    public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
+    {
         return $response;
     }
 }

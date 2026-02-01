@@ -61,4 +61,15 @@ $routes->group('api/v1/admin', [
     $routes->get('finance/payouts/summary', 'FinancePayoutsController::summary');
     $routes->patch('finance/payouts/(:num)/mark-paid', 'FinancePayoutsController::markPaid/$1');
     $routes->patch('finance/payouts/(:num)/mark-failed', 'FinancePayoutsController::markFailed/$1');
-});
+    
+    
+    // Finance -> Platform Commissions (derived) + Config
+    $routes->get('finance/commission-config', 'FinanceCommissionConfigController::show');
+    $routes->patch('finance/commission-config', 'FinanceCommissionConfigController::update');
+    $routes->get('finance/commissions', 'FinanceCommissionsController::index');
+    $routes->get('finance/commissions/summary', 'FinanceCommissionsController::summary');
+    
+    $routes->match(['patch', 'post'], 'finance/commissions/(:num)/confirm', 'FinanceCommissionsController::confirm/$1');
+
+
+    });
