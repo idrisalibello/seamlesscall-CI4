@@ -70,6 +70,22 @@ $routes->group('api/v1/admin', [
     $routes->get('finance/commissions/summary', 'FinanceCommissionsController::summary');
     
     $routes->match(['patch', 'post'], 'finance/commissions/(:num)/confirm', 'FinanceCommissionsController::confirm/$1');
+    
+     // Refunds (global, finance)
+    $routes->get('finance/refunds', 'FinanceRefundsController::index');
+    $routes->get('finance/refunds/summary', 'FinanceRefundsController::summary');
+    $routes->patch('finance/refunds/(:num)/status', 'FinanceRefundsController::updateStatus/$1');
 
+    // Disputes (global, finance)
+    $routes->get('finance/disputes', 'FinanceDisputesController::index');
+    $routes->get('finance/disputes/summary', 'FinanceDisputesController::summary');
+    $routes->patch('finance/disputes/(:num)/status', 'FinanceDisputesController::updateStatus/$1');
 
+    // Backward-compat: PeopleRepository expects this
+    $routes->post('refunds/(:num)/status', 'FinanceRefundsController::updateStatus/$1');
+    
+    // ✅ Finance -> Ledger (global, filter-driven)
+    $routes->get('finance/ledger', 'FinanceLedgerController::index');
+    $routes->get('finance/ledger/summary', 'FinanceLedgerController::summary');
+  
     });
