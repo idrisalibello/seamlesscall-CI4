@@ -61,17 +61,17 @@ $routes->group('api/v1/admin', [
     $routes->get('finance/payouts/summary', 'FinancePayoutsController::summary');
     $routes->patch('finance/payouts/(:num)/mark-paid', 'FinancePayoutsController::markPaid/$1');
     $routes->patch('finance/payouts/(:num)/mark-failed', 'FinancePayoutsController::markFailed/$1');
-    
-    
+
+
     // Finance -> Platform Commissions (derived) + Config
     $routes->get('finance/commission-config', 'FinanceCommissionConfigController::show');
     $routes->patch('finance/commission-config', 'FinanceCommissionConfigController::update');
     $routes->get('finance/commissions', 'FinanceCommissionsController::index');
     $routes->get('finance/commissions/summary', 'FinanceCommissionsController::summary');
-    
+
     $routes->match(['patch', 'post'], 'finance/commissions/(:num)/confirm', 'FinanceCommissionsController::confirm/$1');
-    
-     // Refunds (global, finance)
+
+    // Refunds (global, finance)
     $routes->get('finance/refunds', 'FinanceRefundsController::index');
     $routes->get('finance/refunds/summary', 'FinanceRefundsController::summary');
     $routes->patch('finance/refunds/(:num)/status', 'FinanceRefundsController::updateStatus/$1');
@@ -83,9 +83,33 @@ $routes->group('api/v1/admin', [
 
     // Backward-compat: PeopleRepository expects this
     $routes->post('refunds/(:num)/status', 'FinanceRefundsController::updateStatus/$1');
-    
+
     // ✅ Finance -> Ledger (global, filter-driven)
     $routes->get('finance/ledger', 'FinanceLedgerController::index');
     $routes->get('finance/ledger/summary', 'FinanceLedgerController::summary');
-  
-    });
+
+    // Pricing Rules (Configurations -> Pricing)
+    $routes->get('pricing-rules', 'PricingRulesController::index');
+    $routes->get('pricing-rules/summary', 'PricingRulesController::summary');
+    $routes->get('pricing-rules/(:num)', 'PricingRulesController::show/$1');
+    $routes->post('pricing-rules', 'PricingRulesController::create');
+    $routes->put('pricing-rules/(:num)', 'PricingRulesController::update/$1');
+    $routes->patch('pricing-rules/(:num)/status', 'PricingRulesController::updateStatus/$1');
+    $routes->delete('pricing-rules/(:num)', 'PricingRulesController::delete/$1');
+
+    // Configurations -> Pricing (Controlled Flex Pricing)
+$routes->get('pricing/profiles', 'PricingController::profiles');
+$routes->get('pricing/summary', 'PricingController::summary');
+$routes->get('pricing/profiles/(:num)', 'PricingController::profile/$1');
+$routes->post('pricing/profiles', 'PricingController::createProfile');
+$routes->put('pricing/profiles/(:num)', 'PricingController::updateProfile/$1');
+$routes->patch('pricing/profiles/(:num)/status', 'PricingController::updateProfileStatus/$1');
+$routes->delete('pricing/profiles/(:num)', 'PricingController::deleteProfile/$1');
+
+$routes->get('pricing/profiles/(:num)/adjustments', 'PricingController::listAdjustments/$1');
+$routes->post('pricing/profiles/(:num)/adjustments', 'PricingController::createAdjustment/$1');
+$routes->put('pricing/adjustments/(:num)', 'PricingController::updateAdjustment/$1');
+$routes->patch('pricing/adjustments/(:num)/status', 'PricingController::updateAdjustmentStatus/$1');
+$routes->delete('pricing/adjustments/(:num)', 'PricingController::deleteAdjustment/$1');
+
+});
