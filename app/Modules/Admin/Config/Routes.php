@@ -98,18 +98,17 @@ $routes->group('api/v1/admin', [
     $routes->delete('pricing-rules/(:num)', 'PricingRulesController::delete/$1');
 
     // Configurations -> Pricing (Controlled Flex Pricing)
-$routes->get('pricing/profiles', 'PricingController::profiles');
-$routes->get('pricing/summary', 'PricingController::summary');
-$routes->get('pricing/profiles/(:num)', 'PricingController::profile/$1');
-$routes->post('pricing/profiles', 'PricingController::createProfile');
-$routes->put('pricing/profiles/(:num)', 'PricingController::updateProfile/$1');
-$routes->patch('pricing/profiles/(:num)/status', 'PricingController::updateProfileStatus/$1');
-$routes->delete('pricing/profiles/(:num)', 'PricingController::deleteProfile/$1');
+    $routes->get('pricing/profiles', 'PricingController::profiles');
+    $routes->get('pricing/summary', 'PricingController::summary');
+    $routes->get('pricing/profiles/(:num)', 'PricingController::profile/$1');
+    $routes->post('pricing/profiles', 'PricingController::createProfile');
+    $routes->put('pricing/profiles/(:num)', 'PricingController::updateProfile/$1');
+    $routes->patch('pricing/profiles/(:num)/status', 'PricingController::updateProfileStatus/$1');
+    $routes->delete('pricing/profiles/(:num)', 'PricingController::deleteProfile/$1');
 
-$routes->get('pricing/profiles/(:num)/adjustments', 'PricingController::listAdjustments/$1');
-$routes->post('pricing/profiles/(:num)/adjustments', 'PricingController::createAdjustment/$1');
-$routes->put('pricing/adjustments/(:num)', 'PricingController::updateAdjustment/$1');
-$routes->patch('pricing/adjustments/(:num)/status', 'PricingController::updateAdjustmentStatus/$1');
-$routes->delete('pricing/adjustments/(:num)', 'PricingController::deleteAdjustment/$1');
-
+    $routes->get('pricing/profiles/(:num)/adjustments', 'PricingController::listAdjustments/$1');
+    $routes->post('pricing/profiles/(:num)/adjustments', 'PricingController::createAdjustment/$1');
+    $routes->put('pricing/adjustments/(:num)', 'PricingController::updateAdjustment/$1');
+    $routes->patch('pricing/adjustments/(:num)/status', 'PricingController::updateAdjustmentStatus/$1');
+    $routes->delete('pricing/adjustments/(:num)', 'PricingController::deleteAdjustment/$1');
 });
