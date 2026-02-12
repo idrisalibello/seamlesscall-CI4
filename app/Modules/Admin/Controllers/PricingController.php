@@ -24,23 +24,38 @@ class PricingController extends BaseController
 
     private function normalizeProfile(array $r): array
     {
-        foreach (['id', 'service_id', 'max_override_percent', 'auto_flag_dispute_threshold'] as $k) {
+        foreach (
+            [
+                'id',
+                'service_id',
+                'band_is_per_unit',
+                'max_override_percent',
+                'auto_flag_dispute_threshold',
+                'warn_variance_percent',
+                'critical_variance_percent',
+                'require_reason_over_critical',
+            ] as $k
+        ) {
             if (isset($r[$k]) && $r[$k] !== null && $r[$k] !== '') {
                 $r[$k] = (int) $r[$k];
             }
         }
+
         foreach (['inspection_fee', 'minimum_job_fee', 'price_band_min', 'price_band_max'] as $k) {
             if (isset($r[$k])) {
                 $r[$k] = (float) $r[$k];
             }
         }
+
         foreach (['allow_band_override', 'require_admin_review'] as $k) {
             if (isset($r[$k])) {
                 $r[$k] = (int) $r[$k];
             }
         }
+
         return $r;
     }
+
 
     private function normalizeAdjustment(array $r): array
     {
@@ -148,7 +163,7 @@ class PricingController extends BaseController
             ->limit($pageSize, $offset)
             ->get()->getResultArray();
 
-        $rows = array_map(fn ($r) => $this->normalizeProfile(is_object($r) ? (array) $r : $r), $rows);
+        $rows = array_map(fn($r) => $this->normalizeProfile(is_object($r) ? (array) $r : $r), $rows);
 
         $totalPages = (int) ceil($totalRows / $pageSize);
         if ($totalPages < 1) {
@@ -288,6 +303,16 @@ class PricingController extends BaseController
             'max_override_percent' => 'permit_empty|is_natural',
             'require_admin_review' => 'permit_empty|in_list[0,1]',
             'auto_flag_dispute_threshold' => 'permit_empty|is_natural',
+
+            // Bands are guidance, optionally per-unit.
+            'band_is_per_unit' => 'permit_empty|in_list[0,1]',
+            'unit_label' => 'permit_empty|string|max_length[50]',
+
+            // Alert-only thresholds.
+            'warn_variance_percent' => 'permit_empty|is_natural',
+            'critical_variance_percent' => 'permit_empty|is_natural',
+            'require_reason_over_critical' => 'permit_empty|in_list[0,1]',
+
         ];
 
         if (!$this->validate($rules, $payload)) {
@@ -301,12 +326,26 @@ class PricingController extends BaseController
         }
 
         $data = [];
-        foreach ([
-            'service_id', 'pricing_basis', 'currency', 'status',
-            'notes_for_client', 'notes_for_provider',
-            'allow_band_override', 'max_override_percent',
-            'require_admin_review', 'auto_flag_dispute_threshold',
-        ] as $k) {
+        foreach (
+            [
+                'service_id',
+                'pricing_basis',
+                'currency',
+                'status',
+                'notes_for_client',
+                'notes_for_provider',
+                'allow_band_override',
+                'max_override_percent',
+                'require_admin_review',
+                'auto_flag_dispute_threshold',
+                'band_is_per_unit',
+                'unit_label',
+                'warn_variance_percent',
+                'critical_variance_percent',
+                'require_reason_over_critical',
+
+            ] as $k
+        ) {
             if (array_key_exists($k, $payload)) {
                 $data[$k] = $payload[$k];
             }
@@ -409,7 +448,7 @@ class PricingController extends BaseController
             ->orderBy('id', 'DESC')
             ->get()->getResultArray();
 
-        $rows = array_map(fn ($r) => $this->normalizeAdjustment(is_object($r) ? (array) $r : $r), $rows);
+        $rows = array_map(fn($r) => $this->normalizeAdjustment(is_object($r) ? (array) $r : $r), $rows);
 
         return $this->respond(['data' => $rows]);
     }

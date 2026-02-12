@@ -16,6 +16,9 @@ class ServicePricingProfileModel extends Model
         'minimum_job_fee',
         'price_band_min',
         'price_band_max',
+        // Bands are guidance; can optionally be per-unit.
+        'band_is_per_unit',
+        'unit_label',
         'currency',
         'status',
         'notes_for_client',
@@ -24,6 +27,10 @@ class ServicePricingProfileModel extends Model
         'max_override_percent',
         'require_admin_review',
         'auto_flag_dispute_threshold',
+        // Alert-only thresholds (no hard restriction).
+        'warn_variance_percent',
+        'critical_variance_percent',
+        'require_reason_over_critical',
     ];
 
     protected $useTimestamps = true;
