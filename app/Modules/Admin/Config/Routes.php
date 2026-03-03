@@ -111,4 +111,19 @@ $routes->group('api/v1/admin', [
     $routes->put('pricing/adjustments/(:num)', 'PricingController::updateAdjustment/$1');
     $routes->patch('pricing/adjustments/(:num)/status', 'PricingController::updateAdjustmentStatus/$1');
     $routes->delete('pricing/adjustments/(:num)', 'PricingController::deleteAdjustment/$1');
+
+    $routes->group('api/v1/admin', ['namespace' => 'App\Modules\Admin\Controllers'], function ($routes) {
+
+        $routes->get('coverage', 'CoverageController::index');
+        $routes->get('coverage/(:num)', 'CoverageController::show/$1');
+        $routes->post('coverage', 'CoverageController::create');
+        $routes->put('coverage/(:num)', 'CoverageController::update/$1');
+        $routes->patch('coverage/(:num)/status', 'CoverageController::changeStatus/$1');
+        $routes->delete('coverage/(:num)', 'CoverageController::delete/$1');
+    });
+
+    $routes->get('coverages', 'CoverageController::index');
+    $routes->post('coverages', 'CoverageController::create');
+    $routes->put('coverages/(:num)', 'CoverageController::update/$1');
+    $routes->delete('coverages/(:num)', 'CoverageController::delete/$1');
 });
