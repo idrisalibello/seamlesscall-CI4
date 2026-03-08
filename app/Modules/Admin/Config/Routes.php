@@ -126,4 +126,12 @@ $routes->group('api/v1/admin', [
     $routes->post('coverages', 'CoverageController::create');
     $routes->put('coverages/(:num)', 'CoverageController::update/$1');
     $routes->delete('coverages/(:num)', 'CoverageController::delete/$1');
+
+    // Configurations -> Availability
+    $routes->get('coverage-rules', 'CoverageRuleController::index');
+    $routes->get('coverage-rules/(:num)', 'CoverageRuleController::show/$1');
+    $routes->post('coverage-rules', 'CoverageRuleController::create');
+    $routes->put('coverage-rules/(:num)', 'CoverageRuleController::update/$1');
+    $routes->patch('coverage-rules/(:num)/status', 'CoverageRuleController::updateStatus/$1');
+    $routes->delete('coverage-rules/(:num)', 'CoverageRuleController::delete/$1');
 });
