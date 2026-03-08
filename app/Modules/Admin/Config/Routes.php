@@ -134,4 +134,18 @@ $routes->group('api/v1/admin', [
     $routes->put('coverage-rules/(:num)', 'CoverageRuleController::update/$1');
     $routes->patch('coverage-rules/(:num)/status', 'CoverageRuleController::updateStatus/$1');
     $routes->delete('coverage-rules/(:num)', 'CoverageRuleController::delete/$1');
+
+    // Configurations -> Promotions
+    $routes->get('promotions', 'PromotionController::index');
+    $routes->get('promotions/(:num)', 'PromotionController::show/$1');
+    $routes->post('promotions', 'PromotionController::create');
+    $routes->put('promotions/(:num)', 'PromotionController::update/$1');
+    $routes->patch('promotions/(:num)/status', 'PromotionController::updateStatus/$1');
+    $routes->delete('promotions/(:num)', 'PromotionController::delete/$1');
+});
+$routes->group('api/v1', [
+    'namespace' => 'App\Modules\Admin\Controllers',
+    'filter'    => 'auth',
+], function ($routes) {
+    $routes->get('promotions/active', 'PromotionFeedController::index');
 });
