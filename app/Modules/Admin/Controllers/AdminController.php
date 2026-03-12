@@ -467,7 +467,7 @@ public function getEarningsOverview()
      *
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function getUsers()
+        public function getUsers()
     {
         $adminUser = service('request')->auth_payload;
         if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
@@ -475,18 +475,20 @@ public function getEarningsOverview()
         }
 
         $userModel = new UserModel();
-        $users = $userModel->asArray()->findAll(); // Get all users, not just customers/providers
+        $users = $userModel
+            ->asArray()
+            ->where('role', 'Admin')
+            ->findAll();
 
         return $this->respond(['data' => $this->formatOutput($users)]);
     }
-
     /**
      * Update user details.
      *
      * @param int $userId
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function updateUser(int $userId)
+        public function updateUser(int $userId)
     {
         $adminUser = service('request')->auth_payload;
         if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
@@ -500,23 +502,24 @@ public function getEarningsOverview()
             return $this->failNotFound('User not found.');
         }
 
+        $userToUpdate = is_array($userToUpdate) ? $userToUpdate : (array) $userToUpdate;
+
+        if (($userToUpdate['role'] ?? null) !== 'Admin') {
+            return $this->failValidationErrors([
+                'user' => 'Manage Users only supports admin users.',
+            ]);
+        }
+
         $rules = [
-            'name' => 'permit_empty|min_length[3]|max_length[255]',
-            'phone' => 'permit_empty|min_length[10]|max_length[15]',
+            'name'   => 'permit_empty|min_length[3]|max_length[255]',
+            'phone'  => 'permit_empty|min_length[10]|max_length[15]',
             'status' => 'permit_empty|in_list[pending,active,suspended]',
-            'role' => 'permit_empty|in_list[Admin,Provider,Customer]', // Allow updating the original role
-            'kyc_status' => 'permit_empty|in_list[Pending,Verified,Rejected]',
-            'is_provider' => 'permit_empty|in_list[0,1]',
-            'provider_status' => 'permit_empty|in_list[pending,approved,rejected]',
-            // Password change should be a separate endpoint for security
-            // Email change should be handled carefully due to uniqueness
         ];
 
-        $input = $this->request->getJSON(true); // Get as associative array
-        $allowedFields = ['name', 'phone', 'status', 'role', 'kyc_status', 'is_provider', 'provider_status'];
-        $updateData = array_intersect_key($input, array_flip($allowedFields));
+        $input = $this->request->getJSON(true);
+        $allowedFields = ['name', 'phone', 'status'];
+        $updateData = array_intersect_key((array) $input, array_flip($allowedFields));
 
-        // Skip validation for fields not present in the input
         $validationRules = [];
         foreach ($updateData as $field => $value) {
             if (isset($rules[$field])) {
@@ -525,19 +528,20 @@ public function getEarningsOverview()
         }
 
         if (!empty($validationRules) && !$this->validate($validationRules)) {
-            return $this->failValidationErrors("errors");
+            return $this->failValidationErrors($this->validator->getErrors());
         }
 
         try {
             if ($userModel->update($userId, $updateData)) {
                 return $this->respondUpdated(['message' => 'User updated successfully.']);
-            } else {
-                $errors = $userModel->errors();
-                if (!empty($errors)) {
-                    return $this->failValidationErrors($errors);
-                }
-                return $this->failServerError('Failed to update user.');
             }
+
+            $errors = $userModel->errors();
+            if (!empty($errors)) {
+                return $this->failValidationErrors($errors);
+            }
+
+            return $this->failServerError('Failed to update user.');
         } catch (Exception $e) {
             log_message('error', '[ERROR] updateUser: ' . $e->getMessage() . '\n' . $e->getTraceAsString());
             return $this->failServerError('An unexpected error occurred.');
@@ -550,7 +554,7 @@ public function getEarningsOverview()
      * @param int $userId
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function getUserRoles(int $userId)
+        public function getUserRoles(int $userId)
     {
         $adminUser = service('request')->auth_payload;
         if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
@@ -558,8 +562,18 @@ public function getEarningsOverview()
         }
 
         $userModel = new UserModel();
-        if (!$userModel->find($userId)) {
+        $targetUser = $userModel->find($userId);
+
+        if (!$targetUser) {
             return $this->failNotFound('User not found.');
+        }
+
+        $targetUser = is_array($targetUser) ? $targetUser : (array) $targetUser;
+
+        if (($targetUser['role'] ?? null) !== 'Admin') {
+            return $this->failValidationErrors([
+                'user' => 'Roles can only be managed for admin users.',
+            ]);
         }
 
         $userRoleModel = new UserRoleModel();
@@ -567,14 +581,13 @@ public function getEarningsOverview()
 
         return $this->respond(['data' => $this->formatOutput($userRoles)]);
     }
-
     /**
      * Update roles assigned to a specific user.
      *
      * @param int $userId
      * @return \CodeIgniter\HTTP\ResponseInterface
      */
-    public function updateUserRoles(int $userId)
+        public function updateUserRoles(int $userId)
     {
         $adminUser = service('request')->auth_payload;
         if (!$adminUser || !isset($adminUser->role) || $adminUser->role !== 'Admin') {
@@ -582,16 +595,47 @@ public function getEarningsOverview()
         }
 
         $userModel = new UserModel();
-        if (!$userModel->find($userId)) {
+        $targetUser = $userModel->find($userId);
+
+        if (!$targetUser) {
             return $this->failNotFound('User not found.');
         }
 
-        $input = $this->request->getJSON(true); // Get as associative array
+        $targetUser = is_array($targetUser) ? $targetUser : (array) $targetUser;
+
+        if (($targetUser['role'] ?? null) !== 'Admin') {
+            return $this->failValidationErrors([
+                'user' => 'Roles can only be managed for admin users.',
+            ]);
+        }
+
+        $input = $this->request->getJSON(true);
         $roleIds = $input['role_ids'] ?? [];
 
-        // Validate $roleIds to ensure they are integers
-        if (!is_array($roleIds) || !array_walk($roleIds, 'is_int')) {
-            return $this->failValidationErrors(['role_ids' => 'Role IDs must be an array of integers.']);
+        if (!is_array($roleIds)) {
+            return $this->failValidationErrors([
+                'role_ids' => 'Role IDs must be an array.',
+            ]);
+        }
+
+        foreach ($roleIds as $roleId) {
+            if (!is_int($roleId) && !ctype_digit((string) $roleId)) {
+                return $this->failValidationErrors([
+                    'role_ids' => 'Role IDs must contain only integers.',
+                ]);
+            }
+        }
+
+        $roleIds = array_values(array_unique(array_map('intval', $roleIds)));
+
+        $roleModel = new RoleModel();
+        if (!empty($roleIds)) {
+            $existingCount = $roleModel->whereIn('id', $roleIds)->countAllResults();
+            if ($existingCount !== count($roleIds)) {
+                return $this->failValidationErrors([
+                    'role_ids' => 'One or more selected roles do not exist.',
+                ]);
+            }
         }
 
         $userRoleModel = new UserRoleModel();

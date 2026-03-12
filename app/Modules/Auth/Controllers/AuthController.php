@@ -265,15 +265,19 @@ class AuthController extends BaseController
             return $this->failValidationErrors(['identifier' => 'Email or phone number is required']);
         }
 
-        try {
-            $channels = $this->authService->sendLoginOtpToAllChannels($identifier);
+                try {
+            $sent = $this->authService->requestLoginOtp($identifier);
+
+            if (!$sent) {
+                return $this->fail('Failed to send OTP', 400);
+            }
+
             return $this->respond([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'OTP sent successfully',
-                'channels' => $channels
             ]);
         } catch (\Exception $e) {
-            return $this->fail($e->getMessage());
+            return $this->fail($e->getMessage(), 400);
         }
     }
 
