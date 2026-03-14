@@ -69,8 +69,7 @@ $routes->group('api/v1/admin', [
     $routes->get('finance/commissions', 'FinanceCommissionsController::index');
     $routes->get('finance/commissions/summary', 'FinanceCommissionsController::summary');
 
-    $routes->match(['patch', 'post'], 'finance/commissions/(:num)/confirm', 'FinanceCommissionsController::confirm/$1');
-
+    $routes->match(['PATCH', 'POST'], 'finance/commissions/(:num)/confirm', 'FinanceCommissionsController::confirm/$1');
     // Refunds (global, finance)
     $routes->get('finance/refunds', 'FinanceRefundsController::index');
     $routes->get('finance/refunds/summary', 'FinanceRefundsController::summary');

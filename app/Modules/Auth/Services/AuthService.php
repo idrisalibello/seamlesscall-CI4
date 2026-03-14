@@ -133,11 +133,25 @@ class AuthService
             throw new Exception('User not found');
         }
 
-        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
-            return $this->_sendEmailOtp((int) $user['id'], 'login');
+        $channels = [];
+
+        if (!empty($user['email'])) {
+            if ($this->_sendEmailOtp((int) $user['id'], 'login')) {
+                $channels[] = 'email';
+            }
         }
 
-        return $this->_sendWhatsAppOtp((int) $user['id'], 'login');
+        if (!empty($user['phone'])) {
+            if ($this->_sendWhatsAppOtp((int) $user['id'], 'login')) {
+                $channels[] = 'whatsapp';
+            }
+        }
+
+        if (empty($channels)) {
+            throw new Exception('Failed to send OTP to any channel');
+        }
+
+        return true;
     }
 
     public function sendLoginOtpToAllChannels(string $identifier): array
