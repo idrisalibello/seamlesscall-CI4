@@ -29,7 +29,6 @@ class AuthService
 
     public function register(array $data)
     {
-        // Normalize phone to E.164
         if (isset($data['phone'])) {
             $data['phone'] = $this->normalizePhone($data['phone']);
         }
@@ -50,10 +49,9 @@ class AuthService
             'updated_at' => $user['updated_at'],
         ];
 
-        $token = $this->jwt->generateToken([
-            'id'   => $user['id'],
-            'role' => $user['role'],
-        ]);
+        $token = $this->jwt->generateToken(
+            $this->buildAuthPayload((int) $user['id'], (string) $user['role'])
+        );
 
         return [
             'user'  => $user,
@@ -63,7 +61,6 @@ class AuthService
 
     public function login(string $emailOrPhone, string $password)
     {
-        // Normalize phone if input is numeric
         $emailOrPhone = $this->normalizeIdentifier($emailOrPhone);
 
         $user = $this->getUserByEmailOrPhone($emailOrPhone);
@@ -80,10 +77,9 @@ class AuthService
             'role'  => (string) $user['role'],
         ];
 
-        $token = $this->jwt->generateToken([
-            'id'   => $userResponse['id'],
-            'role' => $userResponse['role'],
-        ]);
+        $token = $this->jwt->generateToken(
+            $this->buildAuthPayload($userResponse['id'], $userResponse['role'])
+        );
 
         return [
             'user'  => $userResponse,
@@ -101,7 +97,34 @@ class AuthService
             ->first();
     }
 
-    public function requestLoginOtp(string $identifier): array
+    private function buildAuthPayload(int $userId, string $role): array
+    {
+        return [
+            'id'          => $userId,
+            'role'        => $role,
+            'permissions' => $this->getPermissionsForUser($userId),
+        ];
+    }
+
+    private function getPermissionsForUser(int $userId): array
+    {
+        $rows = $this->userModel->db->table('user_roles')
+            ->distinct()
+            ->select('permissions.permission_name')
+            ->join('roles', 'roles.id = user_roles.role_id')
+            ->join('role_permissions', 'role_permissions.role_id = roles.id')
+            ->join('permissions', 'permissions.id = role_permissions.permission_id')
+            ->where('user_roles.user_id', $userId)
+            ->get()
+            ->getResultArray();
+
+        return array_values(array_map(
+            static fn(array $row): string => (string) $row['permission_name'],
+            $rows
+        ));
+    }
+
+    public function requestLoginOtp(string $identifier): bool
     {
         $identifier = $this->normalizeIdentifier($identifier);
 
@@ -110,26 +133,13 @@ class AuthService
             throw new Exception('User not found');
         }
 
-        $channels = [];
-
-        if (!empty($user['email'])) {
-            if ($this->_sendEmailOtp((int)$user['id'], 'login')) {
-                $channels[] = 'email';
-            }
+        if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+            return $this->_sendEmailOtp((int) $user['id'], 'login');
         }
 
-        if (!empty($user['phone'])) {
-            if ($this->_sendWhatsAppOtp((int)$user['id'], 'login')) {
-                $channels[] = 'whatsapp';
-            }
-        }
-
-        if (empty($channels)) {
-            throw new Exception('Failed to send OTP to any channel');
-        }
-
-        return $channels;
+        return $this->_sendWhatsAppOtp((int) $user['id'], 'login');
     }
+
     public function sendLoginOtpToAllChannels(string $identifier): array
     {
         $identifier = $this->normalizeIdentifier($identifier);
@@ -142,13 +152,11 @@ class AuthService
         $otp = random_int(100000, 999999);
         $otpString = (string) $otp;
 
-        // Store OTP for both channels
-        $this->_storeOtp((int)$user['id'], 'login', 'email', $otpString);
-        $this->_storeOtp((int)$user['id'], 'login', 'whatsapp', $otpString);
+        $this->_storeOtp((int) $user['id'], 'login', 'email', $otpString);
+        $this->_storeOtp((int) $user['id'], 'login', 'whatsapp', $otpString);
 
         $channels = [];
 
-        // Send Email
         if (!empty($user['email'])) {
             log_message('debug', '[OTP][EMAIL] Attempting email OTP send. user_id={id} to={to}', [
                 'id' => $user['id'] ?? null,
@@ -186,7 +194,6 @@ class AuthService
             }
         }
 
-        // Send WhatsApp
         if (!empty($user['phone'])) {
             $phone = $this->normalizePhone($user['phone']);
             if ($this->whatsAppService->sendOtp($phone, $otpString)) {
@@ -201,7 +208,6 @@ class AuthService
         return $channels;
     }
 
-    // --- Provider/Admin methods remain unchanged ---
     public function createProvider(array $data, int $adminId)
     {
         $data['role'] = 'provider';
@@ -247,18 +253,22 @@ class AuthService
     {
         $user = $this->userModel->find($userId);
 
-        if (!$user) throw new \Exception('User not found');
-        if ($user['role'] === 'admin') throw new \Exception('Admins cannot apply as providers');
+        if (!$user) {
+            throw new \Exception('User not found');
+        }
+        if ($user['role'] === 'admin') {
+            throw new \Exception('Admins cannot apply as providers');
+        }
         if (!empty($user['provider_status']) && $user['provider_status'] === 'pending') {
             throw new \Exception('Provider application already pending');
         }
 
         $updateData = [
-            'is_provider'      => 0,
-            'provider_status'  => 'pending',
-            'company_name'     => $data['company_name'] ?? null,
-            'location'         => $data['location'] ?? null,
-            'is_company'       => $data['is_company'] ?? 0,
+            'is_provider'         => 0,
+            'provider_status'     => 'pending',
+            'company_name'        => $data['company_name'] ?? null,
+            'location'            => $data['location'] ?? null,
+            'is_company'          => $data['is_company'] ?? 0,
             'provider_applied_at' => Time::now(),
         ];
 
@@ -270,9 +280,11 @@ class AuthService
         $identifier = $this->normalizeIdentifier($identifier);
 
         $user = $this->getUserByEmailOrPhone($identifier);
-        if (!$user) throw new Exception('User not found');
+        if (!$user) {
+            throw new Exception('User not found');
+        }
 
-        $otpVerified = $this->verifyOtp((int)$user['id'], $otp, 'login');
+        $otpVerified = $this->verifyOtp((int) $user['id'], $otp, 'login');
 
         if ($otpVerified) {
             $userResponse = [
@@ -282,10 +294,10 @@ class AuthService
                 'phone' => (string) $user['phone'],
                 'role'  => (string) $user['role'],
             ];
-            return $this->jwt->generateToken([
-                'id'   => $userResponse['id'],
-                'role' => $userResponse['role'],
-            ]);
+
+            return $this->jwt->generateToken(
+                $this->buildAuthPayload($userResponse['id'], $userResponse['role'])
+            );
         }
 
         return null;
@@ -294,8 +306,12 @@ class AuthService
     public function verifyOtp(int $userId, string $otp, string $purpose = 'login'): bool
     {
         $record = $this->otpModel->getValidOtp($userId, $purpose);
-        if (!$record) throw new Exception('No valid OTP found or OTP has expired');
-        if (!password_verify($otp, $record['otp_hash'])) throw new Exception('Invalid OTP provided');
+        if (!$record) {
+            throw new Exception('No valid OTP found or OTP has expired');
+        }
+        if (!password_verify($otp, $record['otp_hash'])) {
+            throw new Exception('Invalid OTP provided');
+        }
 
         $this->otpModel->update($record['id'], ['used_at' => date('Y-m-d H:i:s')]);
         return true;
@@ -304,10 +320,12 @@ class AuthService
     private function _sendEmailOtp(int $userId, string $purpose): bool
     {
         $user = $this->userModel->find($userId);
-        if (!$user || !$user['email']) throw new Exception('User not found or has no email');
+        if (!$user || !$user['email']) {
+            throw new Exception('User not found or has no email');
+        }
 
         $otp = random_int(100000, 999999);
-        $this->_storeOtp($userId, $purpose, 'email', (string)$otp);
+        $this->_storeOtp($userId, $purpose, 'email', (string) $otp);
 
         $email = \Config\Services::email();
         $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
@@ -318,86 +336,20 @@ class AuthService
         return $email->send();
     }
 
-    /**
-     * Login or register a user via Google OAuth
-     *
-     * @param array $googleData ['id' => google_user_id, 'email' => email, 'name' => full name]
-     * @return array ['user' => [...], 'token' => string]
-     * @throws \Exception
-     */
-    // public function loginWithGoogle(array $googleData): array
-    // {
-    //     if (empty($googleData['email']) || empty($googleData['id'])) {
-    //         throw new \Exception('Google login requires email and Google ID');
-    //     }
-
-    //     // Check if user already exists by email
-    //     $user = $this->userModel->where('email', $googleData['email'])->first();
-
-    //     if (!$user) {
-    //         // New user: create account without password
-    //         $userData = [
-    //             'name'       => $googleData['name'] ?? 'Unnamed',
-    //             'email'      => $googleData['email'],
-    //             'google_id'  => $googleData['id'],
-    //             'role'       => 'Customer', // default role
-    //             'status'     => 'active',
-    //             'created_at' => date('Y-m-d H:i:s'),
-    //         ];
-
-    //         $id = $this->userModel->insert($userData);
-    //         $user = $this->userModel->find($id);
-    //     } else {
-    //         // Optional: update google_id if missing
-    //         if (empty($user['google_id'])) {
-    //             $this->userModel->update($user['id'], ['google_id' => $googleData['id']]);
-    //             $user['google_id'] = $googleData['id'];
-    //         }
-    //     }
-
-    //     // Prepare response like password login
-    //     $userResponse = [
-    //         'id'    => (int) $user['id'],
-    //         'name'  => (string) $user['name'],
-    //         'email' => (string) $user['email'],
-    //         'phone' => (string) ($user['phone'] ?? null),
-    //         'role'  => (string) $user['role'],
-    //     ];
-
-    //     // Generate JWT using existing logic
-    //     $token = $this->jwt->generateToken([
-    //         'id'   => $userResponse['id'],
-    //         'role' => $userResponse['role'],
-    //     ]);
-
-    //     return [
-    //         'user'  => $userResponse,
-    //         'token' => $token,
-    //     ];
-    // }
-    /**
-     * Login or register a user via Google OAuth
-     *
-     * @param array $googleData ['id' => google_user_id, 'email' => email, 'name' => full name]
-     * @return array ['user' => [...], 'token' => string]
-     * @throws \Exception
-     */
     public function loginWithGoogle(array $googleData): array
     {
         if (empty($googleData['email']) || empty($googleData['id'])) {
             throw new \Exception('Google login requires email and Google ID');
         }
 
-        // Check if user already exists by email
         $user = $this->userModel->where('email', $googleData['email'])->first();
 
         if (!$user) {
-            // New user: create account without password
             $userData = [
                 'name'       => $googleData['name'] ?? 'Unnamed',
                 'email'      => $googleData['email'],
                 'google_id'  => $googleData['id'],
-                'role'       => 'Customer', // default role
+                'role'       => 'Customer',
                 'status'     => 'active',
                 'created_at' => date('Y-m-d H:i:s'),
             ];
@@ -405,14 +357,12 @@ class AuthService
             $id = $this->userModel->insert($userData);
             $user = $this->userModel->find($id);
         } else {
-            // Optional: update google_id if missing
             if (empty($user['google_id'])) {
                 $this->userModel->update($user['id'], ['google_id' => $googleData['id']]);
                 $user['google_id'] = $googleData['id'];
             }
         }
 
-        // Prepare response like password login
         $userResponse = [
             'id'    => (int) $user['id'],
             'name'  => (string) $user['name'],
@@ -421,19 +371,15 @@ class AuthService
             'role'  => (string) $user['role'],
         ];
 
-        // Generate JWT using existing logic
-        $token = $this->jwt->generateToken([
-            'id'   => $userResponse['id'],
-            'role' => $userResponse['role'],
-        ]);
+        $token = $this->jwt->generateToken(
+            $this->buildAuthPayload($userResponse['id'], $userResponse['role'])
+        );
 
         return [
             'user'  => $userResponse,
             'token' => $token,
         ];
     }
-
-
 
     private function _sendWhatsAppOtp(int $userId, string $purpose): bool
     {
@@ -444,13 +390,13 @@ class AuthService
         }
 
         $otp = random_int(100000, 999999);
-        $this->_storeOtp($userId, $purpose, 'whatsapp', (string)$otp);
+        $this->_storeOtp($userId, $purpose, 'whatsapp', (string) $otp);
 
         $phone = $this->normalizePhone($user['phone']);
         log_message('debug', "Sending WhatsApp OTP $otp to $phone for user ID $userId");
 
         try {
-            $sent = $this->whatsAppService->sendOtp($phone, (string)$otp);
+            $sent = $this->whatsAppService->sendOtp($phone, (string) $otp);
             log_message('debug', 'WhatsApp send result: ' . json_encode($sent));
             return $sent;
         } catch (\Exception $e) {
@@ -458,7 +404,6 @@ class AuthService
             return false;
         }
     }
-
 
     private function _storeOtp(int $userId, string $purpose, string $channel, string $otp): void
     {
@@ -479,16 +424,16 @@ class AuthService
     public function createPendingProvider(array $data)
     {
         $userData = [
-            'name'        => $data['name'] ?? null,
-            'email'       => $data['email'] ?? null,
-            'phone'       => isset($data['phone']) ? $this->normalizePhone($data['phone']) : null,
-            'password'    => isset($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null,
-            'role'        => 'provider',
-            'status'      => 'pending',
+            'name'         => $data['name'] ?? null,
+            'email'        => $data['email'] ?? null,
+            'phone'        => isset($data['phone']) ? $this->normalizePhone($data['phone']) : null,
+            'password'     => isset($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null,
+            'role'         => 'provider',
+            'status'       => 'pending',
             'company_name' => $data['company_name'] ?? null,
-            'location'    => $data['location'] ?? null,
-            'is_company'  => $data['is_company'] ?? 0,
-            'created_at'  => date('Y-m-d H:i:s'),
+            'location'     => $data['location'] ?? null,
+            'is_company'   => $data['is_company'] ?? 0,
+            'created_at'   => date('Y-m-d H:i:s'),
         ];
 
         if (!$userData['name'] || !$userData['email'] || !$userData['phone']) {
@@ -502,10 +447,9 @@ class AuthService
         return $this->userModel->insert($userData);
     }
 
-    // --- Helper: normalize phone numbers ---
     private function normalizePhone(string $phone): string
     {
-        $phone = preg_replace('/\D+/', '', $phone); // remove non-digits
+        $phone = preg_replace('/\D+/', '', $phone);
         if (str_starts_with($phone, '0')) {
             $phone = '+234' . substr($phone, 1);
         } elseif (!str_starts_with($phone, '+')) {
@@ -516,7 +460,6 @@ class AuthService
 
     private function normalizeIdentifier(string $identifier): string
     {
-        // Normalize only if it looks like a phone number
         if (preg_match('/^\d{8,15}$/', preg_replace('/\D+/', '', $identifier))) {
             return $this->normalizePhone($identifier);
         }
