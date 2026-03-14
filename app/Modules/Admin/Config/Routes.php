@@ -141,6 +141,14 @@ $routes->group('api/v1/admin', [
     $routes->put('promotions/(:num)', 'PromotionController::update/$1');
     $routes->patch('promotions/(:num)/status', 'PromotionController::updateStatus/$1');
     $routes->delete('promotions/(:num)', 'PromotionController::delete/$1');
+
+    // Reports (business / organizational)
+    $routes->get('reports/summary', 'AdminReportsController::summary');
+    $routes->get('reports/operations', 'AdminReportsController::operations');
+    $routes->get('reports/providers', 'AdminReportsController::providers');
+    $routes->get('reports/customers', 'AdminReportsController::customers');
+    $routes->get('reports/finance', 'AdminReportsController::finance');
+    $routes->get('reports/promotions', 'AdminReportsController::promotions');
 });
 $routes->group('api/v1', [
     'namespace' => 'App\Modules\Admin\Controllers',

@@ -15,15 +15,15 @@ class Email extends BaseConfig
     public string $protocol  = 'smtp';
     public string $mailPath  = '/usr/sbin/sendmail';
 
-    public string $SMTPHost   = 'smtp.gmail.com';
-    public string $SMTPUser   = 'seamlesscallapp@gmail.com';
-    public string $SMTPPass   = 'nkrbtiehzzpxdedc';
-    public int    $SMTPPort   = 587;
-    public int    $SMTPTimeout = 30;
+    public string $SMTPHost      = 'smtp.gmail.com';
+    public string $SMTPUser      = 'seamlesscallapp@gmail.com';
+    public string $SMTPPass      = 'nkrbtiehzzpxdedc';
+    public int    $SMTPPort      = 465;
+    public int    $SMTPTimeout   = 30;
     public bool   $SMTPKeepAlive = false;
-    public string $SMTPCrypto = 'tls';
-    public bool   $SMTPAutoTLS = true;
-    public bool   $SMTPAuth    = true;
+    public string $SMTPCrypto    = 'ssl';
+    public bool   $SMTPAutoTLS   = false;
+    public bool   $SMTPAuth      = true;
 
     public string $wordWrap = 'true';
     public int    $wrapChars = 76;

@@ -20,6 +20,11 @@ class PermissionSeeder extends Seeder
 
         $table = $this->db->table('permissions');
 
+
+        foreach ($this->deprecatedPermissions() as $permissionName) {
+            $table->where('permission_name', $permissionName)->delete();
+        }
+
         foreach (array_values($permissions) as $permission) {
             $existing = $table
                 ->where('permission_name', $permission['permission_name'])
@@ -47,12 +52,13 @@ class PermissionSeeder extends Seeder
         return [
             ['group_name' => 'Dashboard', 'permission_name' => 'view-dashboard', 'description' => 'Access admin dashboard'],
 
-            ['group_name' => 'Reports', 'permission_name' => 'view-roles-permissions-report', 'description' => 'View roles and permissions report'],
-            ['group_name' => 'Reports', 'permission_name' => 'view-integrations-report', 'description' => 'View integrations report'],
-            ['group_name' => 'Reports', 'permission_name' => 'view-feature-toggles-report', 'description' => 'View feature toggles report'],
-            ['group_name' => 'Reports', 'permission_name' => 'view-maintenance-mode-report', 'description' => 'View maintenance mode report'],
-            ['group_name' => 'Reports', 'permission_name' => 'view-audit-trail-report', 'description' => 'View audit trail report'],
-            ['group_name' => 'Reports', 'permission_name' => 'view-system-health-report', 'description' => 'View system health report'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-reports-dashboard', 'description' => 'Access the executive reports dashboard'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-operations-reports', 'description' => 'View operational job reports'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-provider-reports', 'description' => 'View provider performance reports'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-customer-reports', 'description' => 'View customer activity reports'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-finance-reports', 'description' => 'View finance and revenue reports'],
+            ['group_name' => 'Reports', 'permission_name' => 'view-promotion-reports', 'description' => 'View promotion reports'],
+            ['group_name' => 'Reports', 'permission_name' => 'export-reports', 'description' => 'Export reports to CSV or printable PDF'],
 
             ['group_name' => 'System', 'permission_name' => 'manage-roles', 'description' => 'Manage roles and permissions'],
             ['group_name' => 'System', 'permission_name' => 'manage-integrations', 'description' => 'Manage integrations'],
@@ -160,6 +166,13 @@ class PermissionSeeder extends Seeder
             'promotions/(:num)'                => ['Configuration', 'manage-promotions', 'View promotion details'],
             'promotions/(:num)/status'         => ['Configuration', 'manage-promotions', 'Update promotion status'],
 
+            'reports/summary'                  => ['Reports', 'view-reports-dashboard', 'View executive reports dashboard'],
+            'reports/operations'               => ['Reports', 'view-operations-reports', 'View operations reports'],
+            'reports/providers'                => ['Reports', 'view-provider-reports', 'View provider reports'],
+            'reports/customers'                => ['Reports', 'view-customer-reports', 'View customer reports'],
+            'reports/finance'                  => ['Reports', 'view-finance-reports', 'View finance reports'],
+            'reports/promotions'               => ['Reports', 'view-promotion-reports', 'View promotion reports'],
+
             'categories/(:num)/services'       => ['Configuration', 'manage-categories', 'Manage category services'],
             'services/(:num)'                  => ['Configuration', 'manage-categories', 'Manage services'],
         ];
@@ -174,6 +187,19 @@ class PermissionSeeder extends Seeder
             'group_name'      => $group,
             'permission_name' => $permissionName,
             'description'     => $description,
+        ];
+    }
+
+
+    private function deprecatedPermissions(): array
+    {
+        return [
+            'view-roles-permissions-report',
+            'view-integrations-report',
+            'view-feature-toggles-report',
+            'view-maintenance-mode-report',
+            'view-audit-trail-report',
+            'view-system-health-report',
         ];
     }
 }
