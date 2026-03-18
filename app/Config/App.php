@@ -16,7 +16,7 @@ class App extends BaseConfig
      *
      * E.g., http://example.com/
      */
-    public string $baseURL = 'http://172.16.217.176/seamless_call/';
+    public string $baseURL = 'http://10.99.43.176/seamless_call/';
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.

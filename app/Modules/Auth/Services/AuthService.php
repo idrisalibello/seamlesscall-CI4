@@ -133,16 +133,17 @@ class AuthService
             throw new Exception('User not found');
         }
 
+        $otp = (string) random_int(100000, 999999);
         $channels = [];
 
         if (!empty($user['email'])) {
-            if ($this->_sendEmailOtp((int) $user['id'], 'login')) {
+            if ($this->_sendEmailOtp((int) $user['id'], $otp, 'login')) {
                 $channels[] = 'email';
             }
         }
 
         if (!empty($user['phone'])) {
-            if ($this->_sendWhatsAppOtp((int) $user['id'], 'login')) {
+            if ($this->_sendWhatsAppOtp((int) $user['id'], $otp, 'login')) {
                 $channels[] = 'whatsapp';
             }
         }
@@ -150,6 +151,9 @@ class AuthService
         if (empty($channels)) {
             throw new Exception('Failed to send OTP to any channel');
         }
+
+        $storedChannel = count($channels) > 1 ? 'multi' : $channels[0];
+        $this->_storeOtp((int) $user['id'], 'login', $storedChannel, $otp);
 
         return true;
     }
@@ -163,12 +167,7 @@ class AuthService
             throw new \Exception('User not found');
         }
 
-        $otp = random_int(100000, 999999);
-        $otpString = (string) $otp;
-
-        $this->_storeOtp((int) $user['id'], 'login', 'email', $otpString);
-        $this->_storeOtp((int) $user['id'], 'login', 'whatsapp', $otpString);
-
+        $otp = (string) random_int(100000, 999999);
         $channels = [];
 
         if (!empty($user['email'])) {
@@ -177,40 +176,13 @@ class AuthService
                 'to' => $user['email'],
             ]);
 
-            $email = \Config\Services::email();
-            $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
-            $email->setTo($user['email']);
-            $email->setSubject('Your Seamless Call Verification Code');
-            $email->setMessage("Your verification code is: $otpString. This code expires in 5 minutes.");
-
-            try {
-                $sent = $email->send();
-                log_message('debug', '[OTP][EMAIL] CI Email send() returned: {sent}', [
-                    'sent' => $sent ? 'true' : 'false',
-                ]);
-
-                if (!$sent) {
-                    $debug = $email->printDebugger(['headers', 'subject', 'body']);
-                    log_message('error', '[OTP][EMAIL] CI Email debugger output: {debug}', [
-                        'debug' => $debug,
-                    ]);
-                }
-
-                if ($sent) {
-                    $channels[] = 'email';
-                }
-            } catch (\Throwable $e) {
-                log_message('error', '[OTP][EMAIL] Exception during email send: {msg} in {file}:{line}', [
-                    'msg'  => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                ]);
+            if ($this->_sendEmailOtp((int) $user['id'], $otp, 'login')) {
+                $channels[] = 'email';
             }
         }
 
         if (!empty($user['phone'])) {
-            $phone = $this->normalizePhone($user['phone']);
-            if ($this->whatsAppService->sendOtp($phone, $otpString)) {
+            if ($this->_sendWhatsAppOtp((int) $user['id'], $otp, 'login')) {
                 $channels[] = 'whatsapp';
             }
         }
@@ -218,6 +190,9 @@ class AuthService
         if (empty($channels)) {
             throw new \Exception('Failed to send OTP to any channel');
         }
+
+        $storedChannel = count($channels) > 1 ? 'multi' : $channels[0];
+        $this->_storeOtp((int) $user['id'], 'login', $storedChannel, $otp);
 
         return $channels;
     }
@@ -331,23 +306,38 @@ class AuthService
         return true;
     }
 
-    private function _sendEmailOtp(int $userId, string $purpose): bool
+    private function _sendEmailOtp(int $userId, string $otp, string $purpose): bool
     {
         $user = $this->userModel->find($userId);
         if (!$user || !$user['email']) {
             throw new Exception('User not found or has no email');
         }
 
-        $otp = random_int(100000, 999999);
-        $this->_storeOtp($userId, $purpose, 'email', (string) $otp);
-
         $email = \Config\Services::email();
         $email->setFrom(config('Email')->fromEmail, config('Email')->fromName);
         $email->setTo($user['email']);
         $email->setSubject('Your Seamless Call Verification Code');
-        $email->setMessage("Your verification code is: $otp. This code expires in 5 minutes.");
+        $email->setMessage("Your verification code is: {$otp}. This code expires in 5 minutes.");
 
-        return $email->send();
+        try {
+            $sent = $email->send();
+
+            if (!$sent) {
+                log_message('error', '[OTP][EMAIL] CI Email debugger output: {debug}', [
+                    'debug' => $email->printDebugger(['headers', 'subject', 'body']),
+                ]);
+            }
+
+            return $sent;
+        } catch (\Throwable $e) {
+            log_message('error', '[OTP][EMAIL] Exception during email send: {msg} in {file}:{line}', [
+                'msg'  => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+
+            return false;
+        }
     }
 
     public function loginWithGoogle(array $googleData): array
@@ -395,7 +385,7 @@ class AuthService
         ];
     }
 
-    private function _sendWhatsAppOtp(int $userId, string $purpose): bool
+    private function _sendWhatsAppOtp(int $userId, string $otp, string $purpose): bool
     {
         $user = $this->userModel->find($userId);
         if (!$user || !$user['phone']) {
@@ -403,14 +393,11 @@ class AuthService
             throw new \Exception('User not found or has no phone number');
         }
 
-        $otp = random_int(100000, 999999);
-        $this->_storeOtp($userId, $purpose, 'whatsapp', (string) $otp);
-
         $phone = $this->normalizePhone($user['phone']);
         log_message('debug', "Sending WhatsApp OTP $otp to $phone for user ID $userId");
 
         try {
-            $sent = $this->whatsAppService->sendOtp($phone, (string) $otp);
+            $sent = $this->whatsAppService->sendOtp($phone, $otp);
             log_message('debug', 'WhatsApp send result: ' . json_encode($sent));
             return $sent;
         } catch (\Exception $e) {
