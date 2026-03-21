@@ -16,7 +16,7 @@ $moduleRouteFiles = [
     APPPATH . 'Modules/Admin/Config/Routes.php',
     APPPATH . 'Modules/System/Config/Routes.php',
     APPPATH . 'Modules/Operations/Config/Routes.php',
-    APPPATH . 'Modules/Customer/Config/Routes.php',
+    APPPATH . 'Modules/Customers/Config/Routes.php',
 ];
 
 foreach ($moduleRouteFiles as $routeFile) {
