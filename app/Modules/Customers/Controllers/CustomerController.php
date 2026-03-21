@@ -5,9 +5,12 @@ namespace App\Modules\Customers\Controllers;
 use App\Controllers\BaseController;
 use App\Models\CategoryModel;
 use App\Models\JobModel;
+use App\Models\JobPaymentModel;
+use App\Models\LedgerModel;
 use App\Models\ServiceModel;
 use App\Models\ServicePricingAdjustmentModel;
 use App\Models\ServicePricingProfileModel;
+use App\Models\UserModel;
 use CodeIgniter\API\ResponseTrait;
 use Exception;
 
@@ -20,6 +23,9 @@ class CustomerController extends BaseController
     protected ServicePricingProfileModel $profileModel;
     protected ServicePricingAdjustmentModel $adjustmentModel;
     protected JobModel $jobModel;
+    protected UserModel $userModel;
+    protected JobPaymentModel $jobPaymentModel;
+    protected LedgerModel $ledgerModel;
 
     public function __construct()
     {
@@ -28,6 +34,9 @@ class CustomerController extends BaseController
         $this->profileModel    = new ServicePricingProfileModel();
         $this->adjustmentModel = new ServicePricingAdjustmentModel();
         $this->jobModel        = new JobModel();
+        $this->userModel       = new UserModel();
+        $this->jobPaymentModel = new JobPaymentModel();
+        $this->ledgerModel     = new LedgerModel();
     }
 
     private function requireCustomerAccess()
@@ -43,6 +52,23 @@ class CustomerController extends BaseController
         }
 
         return null;
+    }
+
+    private function paystackSecretKey(): string
+    {
+        return trim((string) env('paystack.secretKey'));
+    }
+
+    private function paystackBaseUrl(): string
+    {
+        $value = trim((string) env('paystack.baseUrl'));
+        return $value !== '' ? rtrim($value, '/') : 'https://api.paystack.co';
+    }
+
+    private function paystackCallbackUrl(): ?string
+    {
+        $value = trim((string) env('paystack.callbackUrl'));
+        return $value !== '' ? $value : null;
     }
 
     private function normalizeCategory(array $row): array
@@ -136,6 +162,289 @@ class CustomerController extends BaseController
             'escalated_at'      => $row['escalated_at'] ?? null,
             'escalated_by'      => isset($row['escalated_by']) && $row['escalated_by'] !== null ? (int) $row['escalated_by'] : null,
         ];
+    }
+
+    private function decodeJobDescription(?string $raw): array
+    {
+        if (!$raw) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function amountToSubunit(float $amount, string $currency): int
+    {
+        $currency = strtoupper(trim($currency));
+        if (in_array($currency, ['NGN', 'GHS', 'ZAR'], true)) {
+            return (int) round($amount * 100);
+        }
+
+        return (int) round($amount * 100);
+    }
+
+    private function findInspectionProfileForService(int $serviceId): ?array
+    {
+        return $this->profileModel
+            ->where('service_id', $serviceId)
+            ->where('status', 'active')
+            ->first();
+    }
+
+    private function latestInspectionPaymentSummary(int $jobId, int $serviceId): array
+    {
+        $profile = $this->findInspectionProfileForService($serviceId);
+        $fee = isset($profile['inspection_fee']) ? (float) $profile['inspection_fee'] : 0.0;
+        $currency = $profile['currency'] ?? 'NGN';
+
+        $payment = $this->jobPaymentModel->latestForJobPurpose($jobId, 'inspection_fee');
+
+        if ($fee <= 0) {
+            return [
+                'purpose' => 'inspection_fee',
+                'status' => 'success',
+                'amount' => 0.0,
+                'currency' => $currency,
+                'reference' => null,
+                'message' => 'Inspection fee is not required for this service.',
+            ];
+        }
+
+        if (!$payment) {
+            return [
+                'purpose' => 'inspection_fee',
+                'status' => 'inspection_due',
+                'amount' => $fee,
+                'currency' => $currency,
+                'reference' => null,
+                'message' => 'Inspection fee is pending.',
+            ];
+        }
+
+        return [
+            'purpose' => 'inspection_fee',
+            'status' => (string) ($payment['status'] ?? 'inspection_due'),
+            'amount' => isset($payment['amount']) ? (float) $payment['amount'] : $fee,
+            'currency' => $payment['currency'] ?? $currency,
+            'reference' => $payment['paystack_reference'] ?? null,
+            'message' => $payment['gateway_message'] ?? null,
+        ];
+    }
+
+    private function buildBookingListRow(array $job): array
+    {
+        $data = $this->normalizeJob($job);
+        $data['payment_summary'] = $this->latestInspectionPaymentSummary(
+            (int) $data['id'],
+            (int) $data['service_id']
+        );
+        return $data;
+    }
+
+    private function buildTrackingPayload(array $job): array
+    {
+        $meta = $this->decodeJobDescription($job['description'] ?? null);
+        $service = $this->serviceModel->find((int) $job['service_id']);
+
+        $provider = null;
+        if (!empty($job['provider_id'])) {
+            $provider = $this->userModel->find((int) $job['provider_id']);
+        }
+
+        $status = strtolower((string) ($job['status'] ?? 'pending'));
+        $paymentSummary = $this->latestInspectionPaymentSummary((int) $job['id'], (int) $job['service_id']);
+
+        $timeline = [
+            [
+                'key'       => 'request_created',
+                'title'     => 'Request created',
+                'subtitle'  => 'Your booking request was received.',
+                'completed' => true,
+                'active'    => $status === 'pending',
+                'time'      => $job['created_at'] ?? null,
+            ],
+            [
+                'key'       => 'inspection_payment',
+                'title'     => 'Inspection payment',
+                'subtitle'  => $paymentSummary['status'] === 'success'
+                    ? 'Inspection fee has been paid.'
+                    : 'Inspection fee is awaiting payment.',
+                'completed' => $paymentSummary['status'] === 'success',
+                'active'    => $paymentSummary['status'] !== 'success',
+                'time'      => $paymentSummary['status'] === 'success' ? ($job['updated_at'] ?? null) : null,
+            ],
+            [
+                'key'       => 'provider_assigned',
+                'title'     => 'Technician assigned',
+                'subtitle'  => !empty($job['provider_id'])
+                    ? 'A provider has been assigned to your job.'
+                    : 'No provider has been assigned yet.',
+                'completed' => !empty($job['provider_id']),
+                'active'    => $status === 'active',
+                'time'      => $job['assigned_at'] ?? null,
+            ],
+            [
+                'key'       => 'job_completed',
+                'title'     => 'Job completed',
+                'subtitle'  => $status === 'completed'
+                    ? 'The job has been marked completed.'
+                    : 'Completion has not been confirmed yet.',
+                'completed' => $status === 'completed',
+                'active'    => false,
+                'time'      => $job['completed_at'] ?? null,
+            ],
+        ];
+
+        $statusTitle = match ($status) {
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            'active'    => !empty($job['provider_id']) ? 'Technician assigned' : 'In progress',
+            'scheduled' => 'Scheduled',
+            'escalated' => 'Escalated',
+            default     => 'Request received',
+        };
+
+        $statusHint = match ($status) {
+            'completed' => 'Your service request has been completed.',
+            'cancelled' => 'This booking was cancelled.',
+            'active'    => !empty($job['provider_id'])
+                ? 'A provider has been assigned and work is underway.'
+                : 'Your booking is active.',
+            'scheduled' => 'Your service is scheduled and awaiting execution.',
+            'escalated' => 'This job is under review by the admin team.',
+            default     => 'We have received your request and it is awaiting the next action.',
+        };
+
+        $primaryAction = $paymentSummary['status'] === 'success'
+            ? 'View details'
+            : 'Pay inspection';
+
+        return [
+            'job' => $this->buildBookingListRow($job),
+            'service' => $service ? $this->normalizeService($service) : null,
+            'provider' => $provider ? [
+                'id'    => (int) $provider['id'],
+                'name'  => $provider['name'] ?? 'Assigned technician',
+                'phone' => $provider['phone'] ?? null,
+            ] : null,
+            'meta' => [
+                'address'      => $meta['address'] ?? null,
+                'note'         => $meta['note'] ?? null,
+                'booking_type' => $meta['booking_type'] ?? null,
+            ],
+            'payment_summary' => $paymentSummary,
+            'status_summary' => [
+                'title' => $statusTitle,
+                'hint'  => $statusHint,
+            ],
+            'timeline' => $timeline,
+            'primary_action_text' => $primaryAction,
+        ];
+    }
+
+    private function createLedgerEntryForSuccessfulInspection(array $paymentRow): void
+    {
+        $existing = $this->ledgerModel
+            ->where('reference', $paymentRow['paystack_reference'])
+            ->first();
+
+        if ($existing) {
+            return;
+        }
+
+        $this->ledgerModel->insert([
+            'user_id' => (int) $paymentRow['customer_id'],
+            'transaction_type' => 'inspection_fee_payment',
+            'amount' => (float) $paymentRow['amount'],
+            'description' => 'Inspection fee payment for job #' . $paymentRow['job_id'],
+            'reference' => $paymentRow['paystack_reference'],
+        ]);
+    }
+
+    private function updatePaymentFromVerifyPayload(array $paymentRow, array $verifyData): array
+    {
+        $paystackStatus = strtolower((string) ($verifyData['status'] ?? ''));
+        $expectedAmountSubunit = $this->amountToSubunit(
+            (float) $paymentRow['amount'],
+            (string) $paymentRow['currency']
+        );
+        $returnedAmount = (int) ($verifyData['amount'] ?? 0);
+
+        $newStatus = 'failed';
+        if ($paystackStatus === 'success' && $returnedAmount === $expectedAmountSubunit) {
+            $newStatus = 'success';
+        } elseif (in_array($paystackStatus, ['abandoned', 'failed', 'reversed'], true)) {
+            $newStatus = $paystackStatus;
+        } else {
+            $newStatus = 'pending';
+        }
+
+        $update = [
+            'status' => $newStatus,
+            'gateway_message' => $verifyData['message'] ?? null,
+            'paystack_transaction_id' => isset($verifyData['id']) ? (string) $verifyData['id'] : null,
+            'verified_at' => date('Y-m-d H:i:s'),
+            'metadata_json' => json_encode($verifyData, JSON_UNESCAPED_UNICODE),
+        ];
+
+        if ($newStatus === 'success') {
+            $update['paid_at'] = date('Y-m-d H:i:s');
+        }
+
+        $this->jobPaymentModel->update((int) $paymentRow['id'], $update);
+        $updated = $this->jobPaymentModel->find((int) $paymentRow['id']);
+
+        if ($updated && $newStatus === 'success') {
+            $this->createLedgerEntryForSuccessfulInspection($updated);
+        }
+
+        return $updated ?? array_merge($paymentRow, $update);
+    }
+
+    private function callPaystackInitialize(array $payload): array
+    {
+        $client = service('curlrequest', [
+            'baseURI' => $this->paystackBaseUrl(),
+            'timeout' => 30,
+        ]);
+
+        $response = $client->request('POST', '/transaction/initialize', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->paystackSecretKey(),
+                'Content-Type'  => 'application/json',
+            ],
+            'json' => $payload,
+        ]);
+
+        $json = json_decode((string) $response->getBody(), true);
+        if (!is_array($json)) {
+            throw new Exception('Invalid response from Paystack initialize API.');
+        }
+
+        return $json;
+    }
+
+    private function callPaystackVerify(string $reference): array
+    {
+        $client = service('curlrequest', [
+            'baseURI' => $this->paystackBaseUrl(),
+            'timeout' => 30,
+        ]);
+
+        $response = $client->request('GET', '/transaction/verify/' . rawurlencode($reference), [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->paystackSecretKey(),
+                'Content-Type'  => 'application/json',
+            ],
+        ]);
+
+        $json = json_decode((string) $response->getBody(), true);
+        if (!is_array($json)) {
+            throw new Exception('Invalid response from Paystack verify API.');
+        }
+
+        return $json;
     }
 
     public function getCategories()
@@ -287,18 +596,14 @@ class CustomerController extends BaseController
             }
 
             $bookingType = (string) $payload['booking_type'];
-            $scheduledAt = null;
+            $scheduledAt = $bookingType === 'scheduled'
+                ? date('Y-m-d H:i:s', strtotime((string) $payload['scheduled_at']))
+                : date('Y-m-d H:i:s');
 
-            if ($bookingType === 'scheduled') {
-                if (empty($payload['scheduled_at'])) {
-                    return $this->failValidationErrors([
-                        'scheduled_at' => 'Scheduled date and time is required for scheduled bookings.',
-                    ]);
-                }
-
-                $scheduledAt = date('Y-m-d H:i:s', strtotime((string) $payload['scheduled_at']));
-            } else {
-                $scheduledAt = date('Y-m-d H:i:s');
+            if ($bookingType === 'scheduled' && empty($payload['scheduled_at'])) {
+                return $this->failValidationErrors([
+                    'scheduled_at' => 'Scheduled date and time is required for scheduled bookings.',
+                ]);
             }
 
             $title = trim((string) ($payload['service_name'] ?? $service['name'] ?? 'Service Request'));
@@ -336,7 +641,7 @@ class CustomerController extends BaseController
 
             return $this->respondCreated([
                 'message' => 'Booking created successfully.',
-                'data'    => $booking ? $this->normalizeJob($booking) : ['id' => (int) $bookingId],
+                'data'    => $booking ? $this->buildBookingListRow($booking) : ['id' => (int) $bookingId],
             ]);
         } catch (Exception $e) {
             log_message('error', '[CustomerController] createBooking: ' . $e->getMessage());
@@ -358,7 +663,7 @@ class CustomerController extends BaseController
                 ->orderBy('id', 'DESC')
                 ->findAll();
 
-            $data = array_map(fn($row) => $this->normalizeJob((array) $row), $rows);
+            $data = array_map(fn($row) => $this->buildBookingListRow((array) $row), $rows);
 
             return $this->respond(['data' => $data]);
         } catch (Exception $e) {
@@ -385,10 +690,272 @@ class CustomerController extends BaseController
                 return $this->failNotFound('Booking not found.');
             }
 
-            return $this->respond(['data' => $this->normalizeJob((array) $job)]);
+            return $this->respond([
+                'data' => $this->buildTrackingPayload((array) $job),
+            ]);
         } catch (Exception $e) {
             log_message('error', '[CustomerController] getBookingDetails: ' . $e->getMessage());
             return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    public function initializeInspectionPayment()
+    {
+        if ($resp = $this->requireCustomerAccess()) {
+            return $resp;
+        }
+
+        if ($this->paystackSecretKey() === '') {
+            return $this->failServerError('Paystack secret key is not configured.');
+        }
+
+        $user = service('request')->auth_payload;
+        $payload = (array) $this->request->getJSON(true);
+        $jobId = (int) ($payload['job_id'] ?? 0);
+
+        if ($jobId <= 0) {
+            return $this->failValidationErrors(['job_id' => 'Valid job_id is required.']);
+        }
+
+        try {
+            $job = $this->jobModel
+                ->where('id', $jobId)
+                ->where('customer_id', (int) $user->id)
+                ->first();
+
+            if (!$job) {
+                return $this->failNotFound('Booking not found.');
+            }
+
+            $profile = $this->findInspectionProfileForService((int) $job['service_id']);
+            if (!$profile) {
+                return $this->failNotFound('No active pricing profile found for this service.');
+            }
+
+            $amount = (float) ($profile['inspection_fee'] ?? 0);
+            $currency = (string) ($profile['currency'] ?? 'NGN');
+
+            if ($amount <= 0) {
+                return $this->failValidationErrors([
+                    'inspection_fee' => 'Inspection fee is not configured for this service.',
+                ]);
+            }
+
+            $existingSuccess = $this->jobPaymentModel
+                ->where('job_id', $jobId)
+                ->where('purpose', 'inspection_fee')
+                ->where('status', 'success')
+                ->orderBy('id', 'DESC')
+                ->first();
+
+            if ($existingSuccess) {
+                return $this->respond([
+                    'message' => 'Inspection fee is already paid.',
+                    'data' => [
+                        'already_paid' => true,
+                        'reference' => $existingSuccess['paystack_reference'] ?? null,
+                        'amount' => (float) $existingSuccess['amount'],
+                        'currency' => $existingSuccess['currency'] ?? $currency,
+                    ],
+                ]);
+            }
+
+            $customer = $this->userModel->find((int) $user->id);
+            if (!$customer || empty($customer['email'])) {
+                return $this->failValidationErrors([
+                    'email' => 'Customer email is required before payment can be initialized.',
+                ]);
+            }
+
+            $reference = 'SCPAY-' . $jobId . '-' . time() . '-' . random_int(1000, 9999);
+
+            $paystackPayload = [
+                'email' => $customer['email'],
+                'amount' => $this->amountToSubunit($amount, $currency),
+                'reference' => $reference,
+                'currency' => $currency,
+                'metadata' => [
+                    'job_id' => $jobId,
+                    'customer_id' => (int) $user->id,
+                    'service_id' => (int) $job['service_id'],
+                    'purpose' => 'inspection_fee',
+                ],
+            ];
+
+            $callbackUrl = $this->paystackCallbackUrl();
+            if ($callbackUrl) {
+                $paystackPayload['callback_url'] = $callbackUrl;
+            }
+
+            $initResponse = $this->callPaystackInitialize($paystackPayload);
+
+            if (($initResponse['status'] ?? false) !== true || empty($initResponse['data']['authorization_url'])) {
+                return $this->failServerError($initResponse['message'] ?? 'Unable to initialize payment.');
+            }
+
+            $rowId = $this->jobPaymentModel->insert([
+                'job_id' => $jobId,
+                'customer_id' => (int) $user->id,
+                'service_id' => (int) $job['service_id'],
+                'provider_id' => $job['provider_id'] ?? null,
+                'purpose' => 'inspection_fee',
+                'amount' => $amount,
+                'currency' => $currency,
+                'gateway' => 'paystack',
+                'paystack_reference' => $reference,
+                'paystack_access_code' => $initResponse['data']['access_code'] ?? null,
+                'authorization_url' => $initResponse['data']['authorization_url'] ?? null,
+                'status' => 'initialized',
+                'gateway_message' => $initResponse['message'] ?? 'Payment initialized',
+                'metadata_json' => json_encode($paystackPayload['metadata'], JSON_UNESCAPED_UNICODE),
+            ], true);
+
+            if (!$rowId) {
+                return $this->failServerError('Failed to save initialized payment.');
+            }
+
+            return $this->respondCreated([
+                'message' => 'Inspection payment initialized successfully.',
+                'data' => [
+                    'job_id' => $jobId,
+                    'reference' => $reference,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'authorization_url' => $initResponse['data']['authorization_url'],
+                    'access_code' => $initResponse['data']['access_code'] ?? null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            log_message('error', '[CustomerController] initializeInspectionPayment: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    public function verifyPayment(string $reference)
+    {
+        if ($resp = $this->requireCustomerAccess()) {
+            return $resp;
+        }
+
+        if ($this->paystackSecretKey() === '') {
+            return $this->failServerError('Paystack secret key is not configured.');
+        }
+
+        $user = service('request')->auth_payload;
+
+        try {
+            $payment = $this->jobPaymentModel
+                ->where('paystack_reference', $reference)
+                ->where('customer_id', (int) $user->id)
+                ->first();
+
+            if (!$payment) {
+                return $this->failNotFound('Payment reference not found.');
+            }
+
+            $verifyResponse = $this->callPaystackVerify($reference);
+
+            if (($verifyResponse['status'] ?? false) !== true || !isset($verifyResponse['data'])) {
+                return $this->failServerError($verifyResponse['message'] ?? 'Unable to verify payment.');
+            }
+
+            $updated = $this->updatePaymentFromVerifyPayload($payment, (array) $verifyResponse['data']);
+
+            return $this->respond([
+                'message' => 'Payment verification completed.',
+                'data' => [
+                    'reference' => $updated['paystack_reference'] ?? $reference,
+                    'status' => $updated['status'] ?? 'pending',
+                    'amount' => isset($updated['amount']) ? (float) $updated['amount'] : 0.0,
+                    'currency' => $updated['currency'] ?? 'NGN',
+                    'job_id' => isset($updated['job_id']) ? (int) $updated['job_id'] : null,
+                ],
+            ]);
+        } catch (Exception $e) {
+            log_message('error', '[CustomerController] verifyPayment: ' . $e->getMessage());
+            return $this->failServerError('An unexpected error occurred.');
+        }
+    }
+
+    public function paystackWebhook()
+    {
+        if ($this->paystackSecretKey() === '') {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => false,
+                'message' => 'Paystack secret key is not configured.',
+            ]);
+        }
+
+        try {
+            $rawBody = $this->request->getBody() ?? '';
+            $signature = $this->request->getHeaderLine('x-paystack-signature');
+
+            $computed = hash_hmac('sha512', $rawBody, $this->paystackSecretKey());
+            if ($signature === '' || !hash_equals($computed, $signature)) {
+                return $this->response->setStatusCode(401)->setJSON([
+                    'status' => false,
+                    'message' => 'Invalid webhook signature.',
+                ]);
+            }
+
+            $event = json_decode($rawBody, true);
+            if (!is_array($event)) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => false,
+                    'message' => 'Invalid webhook payload.',
+                ]);
+            }
+
+            if (($event['event'] ?? '') !== 'charge.success') {
+                return $this->response->setStatusCode(200)->setJSON([
+                    'status' => true,
+                    'message' => 'Webhook ignored.',
+                ]);
+            }
+
+            $data = (array) ($event['data'] ?? []);
+            $reference = (string) ($data['reference'] ?? '');
+
+            if ($reference === '') {
+                return $this->response->setStatusCode(200)->setJSON([
+                    'status' => true,
+                    'message' => 'No reference supplied.',
+                ]);
+            }
+
+            $payment = $this->jobPaymentModel
+                ->where('paystack_reference', $reference)
+                ->first();
+
+            if (!$payment) {
+                return $this->response->setStatusCode(200)->setJSON([
+                    'status' => true,
+                    'message' => 'Payment reference not found locally.',
+                ]);
+            }
+
+            if (($payment['status'] ?? '') === 'success') {
+                return $this->response->setStatusCode(200)->setJSON([
+                    'status' => true,
+                    'message' => 'Already processed.',
+                ]);
+            }
+
+            $updated = $this->updatePaymentFromVerifyPayload($payment, $data);
+            $this->jobPaymentModel->update((int) $updated['id'], [
+                'webhook_payload' => $rawBody,
+            ]);
+
+            return $this->response->setStatusCode(200)->setJSON([
+                'status' => true,
+                'message' => 'Webhook processed.',
+            ]);
+        } catch (Exception $e) {
+            log_message('error', '[CustomerController] paystackWebhook: ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => false,
+                'message' => 'Webhook processing failed.',
+            ]);
         }
     }
 }
