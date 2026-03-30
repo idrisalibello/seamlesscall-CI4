@@ -335,4 +335,6 @@ class ChatController extends BaseController
             return $this->failServerError('Could not retrieve unread count.');
         }
     }
+
+    
 }
