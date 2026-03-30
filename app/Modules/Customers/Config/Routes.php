@@ -25,3 +25,25 @@ $routes->group('api/v1/customer', [
 $routes->post('api/v1/paystack/webhook', 'CustomerController::paystackWebhook', [
     'namespace' => 'App\Modules\Customers\Controllers',
 ]);
+$routes->group('api/v1/customer/chat', [
+    'namespace' => 'App\Modules\Chat\Controllers',
+    'filter'    => 'auth',
+], static function (RouteCollection $routes) {
+ 
+    // Load message history (paginated)
+    // GET /api/v1/customer/chat/messages?limit=50&offset=0
+    $routes->get('messages', 'ChatController::getMessages');
+ 
+    // Send a text message
+    // POST /api/v1/customer/chat/messages  { body: "..." }
+    // Admin also supplies: { body: "...", customer_id: 42 }
+    $routes->post('messages', 'ChatController::sendMessage');
+ 
+    // Upload a file/image attachment (multipart)
+    // POST /api/v1/customer/chat/attachments  (field: "file")
+    $routes->post('attachments', 'ChatController::uploadAttachment');
+ 
+    // Unread message count — for home screen badge
+    // GET /api/v1/customer/chat/unread-count
+    $routes->get('unread-count', 'ChatController::unreadCount');
+});
