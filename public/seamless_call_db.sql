@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Feb 01, 2026 at 11:59 AM
+-- Generation Time: May 21, 2026 at 10:34 AM
 -- Server version: 8.4.3
 -- PHP Version: 8.3.26
 
@@ -45,7 +45,11 @@ INSERT INTO `activity_log` (`id`, `user_id`, `action`, `description`, `ip_addres
 (1, 31, 'check out profile', 'yes', NULL, NULL, '2026-01-17 14:49:01'),
 (2, 34, 'payout_mark_paid', 'Marked payout #1 as processed. txn=tftyftyft', NULL, NULL, '2026-01-31 18:01:30'),
 (3, 34, 'payout_mark_failed', 'Marked payout #2 as failed. reason=no approval yet', NULL, NULL, '2026-01-31 18:02:13'),
-(4, 34, 'payout_mark_paid', 'Marked payout #2 as processed. txn=tftyftyft', NULL, NULL, '2026-02-01 11:45:32');
+(4, 34, 'payout_mark_paid', 'Marked payout #2 as processed. txn=tftyftyft', NULL, NULL, '2026-02-01 11:45:32'),
+(5, 34, 'finance.commission_config.update', 'Updated platform commission rate to 0.2000', NULL, NULL, '2026-02-01 13:56:42'),
+(6, 34, 'commission_confirm', 'Confirmed commission for earning #1 rate=0.2 commission=4000 net=16000', NULL, NULL, '2026-02-01 17:01:54'),
+(7, 34, 'finance.commission_config.update', 'Updated platform commission rate to 0.1000', NULL, NULL, '2026-02-01 17:39:56'),
+(8, 34, 'refund_status_update', 'Updated refund #1 to approved', NULL, NULL, '2026-02-01 23:55:44');
 
 -- --------------------------------------------------------
 
@@ -70,7 +74,103 @@ INSERT INTO `categories` (`id`, `name`, `description`, `status`, `created_at`, `
 (1, 'plumbing', 'hhhhh', 'active', '2026-01-17 16:16:08', '2026-01-17 16:16:08'),
 (2, 'electrical', 'ljiojioji', 'active', '2026-01-17 16:16:08', '2026-01-17 19:36:52'),
 (3, 'Carpentary', 'bgsgs', 'active', '2026-01-17 16:34:37', '2026-01-17 16:34:37'),
-(4, 'Cleaning Services', 'Offices and homes', 'active', '2026-01-17 20:00:06', '2026-01-18 06:29:28');
+(4, 'Cleaning Services', 'Offices and homes', 'active', '2026-01-17 20:00:06', '2026-01-18 06:29:28'),
+(5, 'Painting', 'All buildings and constructions', 'active', '2026-01-17 20:00:06', '2026-01-18 06:29:28');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_messages`
+--
+
+CREATE TABLE `chat_messages` (
+  `id` int UNSIGNED NOT NULL,
+  `conversation_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED NOT NULL,
+  `sender_role` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `sender_id` int UNSIGNED DEFAULT NULL,
+  `body` text COLLATE utf8mb4_general_ci,
+  `message_type` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'text',
+  `attachment_url` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `attachment_name` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chat_messages`
+--
+
+INSERT INTO `chat_messages` (`id`, `conversation_id`, `customer_id`, `sender_role`, `sender_id`, `body`, `message_type`, `attachment_url`, `attachment_name`, `is_read`, `created_at`, `updated_at`) VALUES
+(1, 0, 36, 'customer', NULL, 'hello', 'text', NULL, NULL, 0, '2026-03-30 17:44:50', '2026-03-30 17:44:50'),
+(2, 0, 36, 'customer', NULL, 'Are you there?', 'text', NULL, NULL, 0, '2026-04-04 13:14:41', '2026-04-04 13:14:41');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conversations`
+--
+
+CREATE TABLE `conversations` (
+  `id` int UNSIGNED NOT NULL,
+  `type` enum('job','support') COLLATE utf8mb4_general_ci NOT NULL,
+  `job_id` int DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `user_one_id` int UNSIGNED NOT NULL COMMENT 'Usually Customer',
+  `user_two_id` int UNSIGNED NOT NULL COMMENT 'Provider or Admin'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `coverages`
+--
+
+CREATE TABLE `coverages` (
+  `id` int UNSIGNED NOT NULL,
+  `name` varchar(150) COLLATE utf8mb4_general_ci NOT NULL,
+  `region` varchar(150) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `coverages`
+--
+
+INSERT INTO `coverages` (`id`, `name`, `region`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Kaduna', 'Metropolis', 1, '2026-03-03 17:57:41', '2026-03-03 17:57:41');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `coverage_rules`
+--
+
+CREATE TABLE `coverage_rules` (
+  `id` bigint UNSIGNED NOT NULL,
+  `category_id` bigint UNSIGNED NOT NULL,
+  `state` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `lga` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `city` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `availability_days` json DEFAULT NULL,
+  `availability_time_start` time DEFAULT NULL,
+  `availability_time_end` time DEFAULT NULL,
+  `status` enum('active','inactive') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `coverage_rules`
+--
+
+INSERT INTO `coverage_rules` (`id`, `category_id`, `state`, `lga`, `city`, `availability_days`, `availability_time_start`, `availability_time_end`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Kaduna', 'Kaduna North', 'Kaduna', '[\"fri\", \"mon\", \"thu\", \"tue\", \"wed\"]', '08:00:00', '17:00:00', 'active', '2026-03-08 09:50:28', '2026-03-08 09:50:28'),
+(2, 1, 'Abuja', 'Municipal', 'Metro', '[\"fri\", \"mon\", \"sat\", \"thu\", \"tue\", \"wed\"]', '08:00:00', '17:00:00', 'active', '2026-03-08 09:52:04', '2026-03-08 09:52:04');
 
 -- --------------------------------------------------------
 
@@ -82,6 +182,12 @@ CREATE TABLE `earnings` (
   `id` int UNSIGNED NOT NULL,
   `provider_id` int NOT NULL,
   `amount` decimal(10,2) NOT NULL,
+  `commission_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'unconfirmed',
+  `commission_rate` decimal(8,4) DEFAULT NULL,
+  `commission_amount` decimal(12,2) DEFAULT NULL,
+  `provider_net` decimal(12,2) DEFAULT NULL,
+  `commission_confirmed_at` datetime DEFAULT NULL,
+  `commission_confirmed_by` int DEFAULT NULL,
   `description` text COLLATE utf8mb4_general_ci,
   `job_id` int UNSIGNED DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP
@@ -91,9 +197,32 @@ CREATE TABLE `earnings` (
 -- Dumping data for table `earnings`
 --
 
-INSERT INTO `earnings` (`id`, `provider_id`, `amount`, `description`, `job_id`, `created_at`) VALUES
-(1, 33, 20000.00, 'huhuhu', 21, '2026-01-17 15:34:38'),
-(2, 35, 40000.00, 'hulala', 21, '2026-01-17 15:34:38');
+INSERT INTO `earnings` (`id`, `provider_id`, `amount`, `commission_status`, `commission_rate`, `commission_amount`, `provider_net`, `commission_confirmed_at`, `commission_confirmed_by`, `description`, `job_id`, `created_at`) VALUES
+(1, 33, 20000.00, 'confirmed', 0.2000, 4000.00, 16000.00, '2026-02-01 17:01:54', 34, 'huhuhu', 21, '2026-01-17 15:34:38'),
+(2, 35, 40000.00, 'unconfirmed', NULL, NULL, NULL, NULL, NULL, 'hulala', 21, '2026-01-17 15:34:38'),
+(3, 35, 50000.00, 'unconfirmed', NULL, NULL, NULL, NULL, NULL, 'hulala', 21, '2026-01-17 15:34:38');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `finance_settings`
+--
+
+CREATE TABLE `finance_settings` (
+  `id` int UNSIGNED NOT NULL,
+  `key` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `value` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `updated_by` int UNSIGNED DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `finance_settings`
+--
+
+INSERT INTO `finance_settings` (`id`, `key`, `value`, `updated_by`, `updated_at`, `created_at`) VALUES
+(1, 'platform_commission_rate', '0.1000', 34, '2026-02-01 17:39:56', '2026-02-01 13:56:42');
 
 -- --------------------------------------------------------
 
@@ -125,12 +254,68 @@ CREATE TABLE `jobs` (
 --
 
 INSERT INTO `jobs` (`id`, `customer_id`, `provider_id`, `service_id`, `title`, `description`, `status`, `scheduled_time`, `completed_at`, `cancelled_at`, `assigned_at`, `created_at`, `updated_at`, `escalation_reason`, `escalated_at`, `escalated_by`) VALUES
-(1, 40, 35, 1, 'I need borehole', 'yes bohe hole in U Dosa', 'active', '2026-01-21 18:59:33', NULL, '2026-01-26 16:19:32', '2026-01-25 12:32:24', '2026-01-21 20:00:56', '2026-01-30 15:32:14', 'reason', '2026-01-26 16:16:11', 34),
+(1, 40, 35, 1, 'I need borehole', 'yes bohe hole in U Dosa', 'completed', '2026-01-21 18:59:33', '2026-02-01 16:08:46', '2026-01-26 16:19:32', '2026-01-25 12:32:24', '2026-01-21 20:00:56', '2026-03-19 11:48:56', 'reason', '2026-01-26 16:16:11', 34),
 (2, 31, 35, 5, 'Chairs', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', NULL, NULL, '2026-01-26 16:20:27', '2026-01-21 20:00:56', '2026-01-30 15:29:11', NULL, NULL, NULL),
 (3, 31, 37, 5, 'Chairs', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', NULL, NULL, '2026-01-26 14:55:01', '2026-01-21 20:00:56', '2026-01-30 17:28:07', NULL, NULL, NULL),
-(4, 31, 31, 3, 'Chairs', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', '2026-01-01 17:25:24', '2026-01-26 21:23:03', '2026-01-01 17:25:38', '2026-01-21 20:00:56', '2026-01-30 17:26:09', NULL, NULL, NULL),
+(4, 31, 31, 3, 'Chairs', 'yes chairs in U Sarki', 'pending', '2026-01-21 18:59:33', '2026-01-01 17:25:24', '2026-01-26 21:23:03', '2026-01-01 17:25:38', '2026-01-21 20:00:56', '2026-03-19 11:49:03', NULL, NULL, NULL),
 (5, 40, 33, 4, 'power', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', NULL, NULL, NULL, '2026-01-21 20:00:56', '2026-01-30 15:29:55', NULL, NULL, NULL),
-(6, 41, 35, 5, 'tables', 'yes chairs in U Sunusi', 'active', '2026-01-21 18:59:33', NULL, NULL, '2026-01-26 21:25:04', '2026-01-21 20:00:56', '2026-01-26 21:25:04', NULL, NULL, NULL);
+(6, 41, 35, 5, 'tables', 'yes chairs in U Sunusi', 'completed', '2026-01-21 18:59:33', '2026-02-01 16:01:24', NULL, '2026-01-26 21:25:04', '2026-01-21 20:00:56', '2026-02-01 16:01:24', NULL, NULL, NULL),
+(7, 36, NULL, 5, 'furniture', '{\"address\":\"24 Nuhu Wali\",\"note\":\"Fix my sofas\",\"booking_type\":\"asap\"}', 'pending', '2026-03-21 16:40:43', NULL, NULL, NULL, '2026-03-21 16:40:43', '2026-03-21 16:40:43', NULL, NULL, NULL),
+(8, 36, NULL, 6, 'Residential', '{\"address\":\"Tudun Wada Kaduna\",\"note\":\"I need civil work\",\"booking_type\":\"asap\"}', 'pending', '2026-03-21 16:47:59', NULL, NULL, NULL, '2026-03-21 16:47:59', '2026-03-21 16:47:59', NULL, NULL, NULL),
+(9, 36, 35, 4, 'grid', '{\"address\":\"Kano Road\",\"note\":\"Sai ka zo\",\"booking_type\":\"scheduled\"}', 'active', '2026-03-25 20:04:00', NULL, NULL, '2026-03-21 17:38:15', '2026-03-21 17:20:12', '2026-03-21 17:38:15', NULL, NULL, NULL),
+(10, 36, NULL, 5, 'furniture', '{\"address\":\"Rigasa\",\"note\":\"\",\"booking_type\":\"asap\"}', 'pending', '2026-03-21 21:36:07', NULL, NULL, NULL, '2026-03-21 21:36:07', '2026-03-21 21:36:07', NULL, NULL, NULL),
+(11, 31, 33, 4, 'power', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', NULL, NULL, NULL, '2026-01-21 20:00:56', '2026-01-30 15:29:55', NULL, NULL, NULL),
+(12, 38, 43, 4, 'transformer', 'yes chairs in U Sarki', 'completed', '2026-01-21 18:59:33', NULL, NULL, NULL, '2026-01-21 20:00:56', '2026-01-30 15:29:55', NULL, NULL, NULL),
+(13, 36, 35, 4, 'grid', '{\"address\":\"Kano Road\",\"note\":\"Sai ka zo\",\"booking_type\":\"scheduled\"}', 'active', '2026-03-25 20:04:00', NULL, NULL, '2026-03-21 17:38:15', '2026-03-21 17:20:12', '2026-03-21 17:38:15', NULL, NULL, NULL),
+(14, 36, NULL, 2, 'Overhead tank', '{\"address\":\"yes yes yes\",\"note\":\"hello aloha\",\"booking_type\":\"scheduled\"}', 'pending', '2026-04-23 15:14:00', NULL, NULL, NULL, '2026-04-04 13:30:13', '2026-04-04 13:30:13', NULL, NULL, NULL),
+(15, 36, NULL, 5, 'furniture', '{\"address\":\"No 24 Chating Road\",\"note\":\"I want new sets of cushions\",\"booking_type\":\"asap\"}', 'pending', '2026-05-21 10:29:18', NULL, NULL, NULL, '2026-05-21 10:29:18', '2026-05-21 10:29:18', NULL, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `job_payments`
+--
+
+CREATE TABLE `job_payments` (
+  `id` int UNSIGNED NOT NULL,
+  `job_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED NOT NULL,
+  `service_id` int UNSIGNED NOT NULL,
+  `provider_id` int DEFAULT NULL,
+  `purpose` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(10) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'NGN',
+  `gateway` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'paystack',
+  `paystack_reference` varchar(120) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `paystack_access_code` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `paystack_transaction_id` varchar(120) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `authorization_url` text COLLATE utf8mb4_general_ci,
+  `status` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'initialized',
+  `gateway_message` text COLLATE utf8mb4_general_ci,
+  `paid_at` datetime DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `metadata_json` longtext COLLATE utf8mb4_general_ci,
+  `webhook_payload` longtext COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `job_payments`
+--
+
+INSERT INTO `job_payments` (`id`, `job_id`, `customer_id`, `service_id`, `provider_id`, `purpose`, `amount`, `currency`, `gateway`, `paystack_reference`, `paystack_access_code`, `paystack_transaction_id`, `authorization_url`, `status`, `gateway_message`, `paid_at`, `verified_at`, `metadata_json`, `webhook_payload`, `created_at`, `updated_at`) VALUES
+(1, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127333-3302', 'lixoslx9d8sve1b', NULL, 'https://checkout.paystack.com/lixoslx9d8sve1b', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:08:54', '2026-03-21 21:08:54'),
+(2, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127424-4213', 'w6mmotyfy1asy4w', NULL, 'https://checkout.paystack.com/w6mmotyfy1asy4w', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:10:25', '2026-03-21 21:10:25'),
+(3, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127431-7392', 'e5j36y1f2gbxraj', NULL, 'https://checkout.paystack.com/e5j36y1f2gbxraj', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:10:33', '2026-03-21 21:10:33'),
+(4, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127458-8012', '1p51m4w5yandkl9', NULL, 'https://checkout.paystack.com/1p51m4w5yandkl9', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:11:00', '2026-03-21 21:11:00'),
+(5, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127466-1248', 'g0wu7jns2zwq3mm', NULL, 'https://checkout.paystack.com/g0wu7jns2zwq3mm', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:11:08', '2026-03-21 21:11:08'),
+(6, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127548-3358', 'x084m1fn3zpyzex', NULL, 'https://checkout.paystack.com/x084m1fn3zpyzex', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:12:31', '2026-03-21 21:12:31'),
+(7, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127614-2891', 'xmaa0tg80iyy6qo', NULL, 'https://checkout.paystack.com/xmaa0tg80iyy6qo', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:13:35', '2026-03-21 21:13:35'),
+(8, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127637-6285', '4iyde3gjg8ql844', NULL, 'https://checkout.paystack.com/4iyde3gjg8ql844', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:13:58', '2026-03-21 21:13:58'),
+(9, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774127650-1434', 'igbh2p9n8b3byba', NULL, 'https://checkout.paystack.com/igbh2p9n8b3byba', 'initialized', 'Authorization URL created', NULL, NULL, '{\"job_id\":7,\"customer_id\":36,\"service_id\":5,\"purpose\":\"inspection_fee\"}', NULL, '2026-03-21 21:14:12', '2026-03-21 21:14:12'),
+(10, 7, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-7-1774128784-7492', 'ukmptr6epoim104', '5958146271', 'https://checkout.paystack.com/ukmptr6epoim104', 'success', NULL, '2026-03-21 21:33:51', '2026-03-21 21:33:51', '{\"id\":5958146271,\"domain\":\"test\",\"status\":\"success\",\"reference\":\"SCPAY-7-1774128784-7492\",\"receipt_number\":null,\"amount\":250000,\"message\":null,\"gateway_response\":\"Successful\",\"paid_at\":\"2026-03-21T21:33:19.000Z\",\"created_at\":\"2026-03-21T21:33:05.000Z\",\"channel\":\"card\",\"currency\":\"NGN\",\"ip_address\":\"102.91.103.111\",\"metadata\":{\"job_id\":\"7\",\"customer_id\":\"36\",\"service_id\":\"5\",\"purpose\":\"inspection_fee\"},\"log\":{\"start_time\":1774128794,\"time_spent\":6,\"attempts\":1,\"errors\":0,\"success\":true,\"mobile\":false,\"input\":[],\"history\":[{\"type\":\"action\",\"message\":\"Attempted to pay with card\",\"time\":4},{\"type\":\"success\",\"message\":\"Successfully paid with card\",\"time\":6}]},\"fees\":13750,\"fees_split\":null,\"authorization\":{\"authorization_code\":\"AUTH_424kthgxfq\",\"bin\":\"408408\",\"last4\":\"4081\",\"exp_month\":\"12\",\"exp_year\":\"2030\",\"channel\":\"card\",\"card_type\":\"visa \",\"bank\":\"TEST BANK\",\"country_code\":\"NG\",\"brand\":\"visa\",\"reusable\":true,\"signature\":\"SIG_cpwmhIG6FR13VIkhIN7S\",\"account_name\":null,\"receiver_bank_account_number\":null,\"receiver_bank\":null},\"customer\":{\"id\":349012993,\"first_name\":null,\"last_name\":null,\"email\":\"seamlesscallapp1@gmail.com\",\"customer_code\":\"CUS_l0bcenr0vccwj89\",\"phone\":null,\"metadata\":null,\"risk_action\":\"default\",\"international_format_phone\":null},\"plan\":null,\"split\":[],\"order_id\":null,\"paidAt\":\"2026-03-21T21:33:19.000Z\",\"createdAt\":\"2026-03-21T21:33:05.000Z\",\"requested_amount\":250000,\"pos_transaction_data\":null,\"source\":null,\"fees_breakdown\":null,\"connect\":null,\"transaction_date\":\"2026-03-21T21:33:05.000Z\",\"plan_object\":[],\"subaccount\":[]}', NULL, '2026-03-21 21:33:05', '2026-03-21 21:33:51'),
+(11, 10, 36, 5, NULL, 'inspection_fee', 2500.00, 'NGN', 'paystack', 'SCPAY-10-1774129035-5265', 'e2tlmea9fplefid', '5958158519', 'https://checkout.paystack.com/e2tlmea9fplefid', 'success', NULL, '2026-03-21 21:37:32', '2026-03-21 21:37:32', '{\"id\":5958158519,\"domain\":\"test\",\"status\":\"success\",\"reference\":\"SCPAY-10-1774129035-5265\",\"receipt_number\":null,\"amount\":250000,\"message\":null,\"gateway_response\":\"Successful\",\"paid_at\":\"2026-03-21T21:37:24.000Z\",\"created_at\":\"2026-03-21T21:37:16.000Z\",\"channel\":\"card\",\"currency\":\"NGN\",\"ip_address\":\"102.91.103.111\",\"metadata\":{\"job_id\":\"10\",\"customer_id\":\"36\",\"service_id\":\"5\",\"purpose\":\"inspection_fee\"},\"log\":{\"start_time\":1774129040,\"time_spent\":5,\"attempts\":1,\"errors\":0,\"success\":true,\"mobile\":false,\"input\":[],\"history\":[{\"type\":\"action\",\"message\":\"Attempted to pay with card\",\"time\":4},{\"type\":\"success\",\"message\":\"Successfully paid with card\",\"time\":5}]},\"fees\":13750,\"fees_split\":null,\"authorization\":{\"authorization_code\":\"AUTH_f2c5ri4a0j\",\"bin\":\"408408\",\"last4\":\"4081\",\"exp_month\":\"12\",\"exp_year\":\"2030\",\"channel\":\"card\",\"card_type\":\"visa \",\"bank\":\"TEST BANK\",\"country_code\":\"NG\",\"brand\":\"visa\",\"reusable\":true,\"signature\":\"SIG_cpwmhIG6FR13VIkhIN7S\",\"account_name\":null,\"receiver_bank_account_number\":null,\"receiver_bank\":null},\"customer\":{\"id\":349012993,\"first_name\":null,\"last_name\":null,\"email\":\"seamlesscallapp1@gmail.com\",\"customer_code\":\"CUS_l0bcenr0vccwj89\",\"phone\":null,\"metadata\":null,\"risk_action\":\"default\",\"international_format_phone\":null},\"plan\":null,\"split\":[],\"order_id\":null,\"paidAt\":\"2026-03-21T21:37:24.000Z\",\"createdAt\":\"2026-03-21T21:37:16.000Z\",\"requested_amount\":250000,\"pos_transaction_data\":null,\"source\":null,\"fees_breakdown\":null,\"connect\":null,\"transaction_date\":\"2026-03-21T21:37:16.000Z\",\"plan_object\":[],\"subaccount\":[]}', NULL, '2026-03-21 21:37:17', '2026-03-21 21:37:32');
 
 -- --------------------------------------------------------
 
@@ -154,7 +339,9 @@ CREATE TABLE `ledger` (
 
 INSERT INTO `ledger` (`id`, `user_id`, `transaction_type`, `amount`, `description`, `reference`, `created_at`) VALUES
 (1, 31, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19'),
-(2, 33, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19');
+(2, 33, 'service payment', 30000.00, 'Job well done', 'qwe23533reeded', '2026-01-15 23:17:19'),
+(3, 36, 'inspection_fee_payment', 2500.00, 'Inspection fee payment for job #7', 'SCPAY-7-1774128784-7492', '2026-03-21 22:33:51'),
+(4, 36, 'inspection_fee_payment', 2500.00, 'Inspection fee payment for job #10', 'SCPAY-10-1774129035-5265', '2026-03-21 22:37:32');
 
 -- --------------------------------------------------------
 
@@ -196,7 +383,20 @@ INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`
 (18, '2026-01-27-205345', 'App\\Database\\Migrations\\CreateKycVerificationCases', 'default', 'App', 1769754167, 14),
 (19, '2026-01-27-230824', 'App\\Database\\Migrations\\RenameProviderIdToUserIdInVerificationCases', 'default', 'App', 1769754167, 14),
 (20, '2026-01-29-174800', 'App\\Database\\Migrations\\CreateProviderRatingsTable', 'default', 'App', 1769754288, 15),
-(21, '2026-01-29-174801', 'App\\Database\\Migrations\\CreateProviderDisputesTable', 'default', 'App', 1769754288, 15);
+(21, '2026-01-29-174801', 'App\\Database\\Migrations\\CreateProviderDisputesTable', 'default', 'App', 1769754288, 15),
+(22, '2026-02-01-180000', 'App\\Database\\Migrations\\CreateFinanceSettingsTable', 'default', 'App', 1769952905, 16),
+(23, '2026-02-02-120000', 'App\\Database\\Migrations\\CreatePricingRulesTable', 'default', 'App', 1770063356, 17),
+(24, '2026-02-03-160000', 'App\\Database\\Migrations\\CreateServicePricingProfilesTable', 'default', 'App', 1770149938, 18),
+(25, '2026-02-03-160100', 'App\\Database\\Migrations\\CreateServicePricingAdjustmentsTable', 'default', 'App', 1770150381, 19),
+(26, '2026-02-12-120000', 'App\\Database\\Migrations\\AlterServicePricingProfilesAddVarianceFields', 'default', 'App', 1770859685, 20),
+(27, '2026-02-12-000001', 'App\\Modules\\Admin\\Database\\Migrations\\CreateCoverageRules', 'default', 'App', 1770877569, 21),
+(28, '2026-03-03-000001', 'App\\Database\\Migrations\\CreateCoveragesTable', 'default', 'App', 1772555706, 22),
+(29, '2026-03-08-120000', 'App\\Database\\Migrations\\CreatePromotionsTable', 'default', 'App', 1772965160, 23),
+(30, '2026-03-08-130000', 'App\\Database\\Migrations\\AddCategoryIdToPromotionsTable', 'default', 'App', 1772970320, 24),
+(31, '2026-03-21-190000', 'App\\Database\\Migrations\\CreateJobPaymentsTable', 'default', 'App', 1774121668, 25),
+(32, '2026-01-01-000001', 'App\\Database\\Migrations\\CreateConversations', 'default', 'App', 1774858783, 26),
+(33, '2026-03-30-000001', 'App\\Database\\Migrations\\CreateChatMessagesTable', 'default', 'App', 1774860035, 27),
+(34, '2026-03-31_000001', 'App\\Database\\Migrations\\AddPopularServicesAndPromotionUsages', 'default', 'App', 1775664085, 28);
 
 -- --------------------------------------------------------
 
@@ -604,7 +804,128 @@ INSERT INTO `otps` (`id`, `user_id`, `otp_hash`, `channel`, `expires_at`, `creat
 (379, 34, '$2y$10$hVUaXof071AVxHXFPCthYuq7OEk4xVEHOl01mBYEWZK1sJtLzAjM2', 'email', '2026-01-31 17:28:01', '2026-01-31 16:23:01', '2026-01-31 17:23:01', '2026-01-31 17:23:01', '192.168.104.142', 'login'),
 (380, 34, '$2y$10$ZATyqHMPYeoZRy7YpYn2RO6F0HulMm6PoZP3MIwXX3nD8uVrWIvD6', 'whatsapp', '2026-01-31 17:28:01', '2026-01-31 16:23:01', '2026-01-31 17:27:11', '2026-01-31 17:27:11', '192.168.104.142', 'login'),
 (381, 34, '$2y$10$KA8kYFWV8eGYpaA12lBtD.Io6u/A83lXNyqbx23WeAyBNqQUwQrdO', 'email', '2026-02-01 11:21:16', '2026-02-01 10:16:16', '2026-02-01 11:16:16', '2026-02-01 11:16:16', '172.19.238.59', 'login'),
-(382, 34, '$2y$10$aGgvMDxvhaYr8f8CfX/yzeF.Sw0ikc9o7l99J49XKXbo/fIS8FMm6', 'whatsapp', '2026-02-01 11:21:16', '2026-02-01 10:16:16', '2026-02-01 11:16:46', '2026-02-01 11:16:46', '172.19.238.59', 'login');
+(382, 34, '$2y$10$aGgvMDxvhaYr8f8CfX/yzeF.Sw0ikc9o7l99J49XKXbo/fIS8FMm6', 'whatsapp', '2026-02-01 11:21:16', '2026-02-01 10:16:16', '2026-02-01 11:16:46', '2026-02-01 11:16:46', '172.19.238.59', 'login'),
+(383, 34, '$2y$10$7dIGNMa70gBz709JeupRC.ohgOdYwL/N7erfxIHjFC8isGZdBVDc6', 'email', '2026-02-01 13:59:43', '2026-02-01 12:54:43', '2026-02-01 13:54:43', '2026-02-01 13:54:43', '172.19.238.59', 'login'),
+(384, 34, '$2y$10$ju9ZWuB.R/72AWkF2rSja.Hlr4z3mQiNMY8DQoInECwn93ObP5vN.', 'whatsapp', '2026-02-01 13:59:43', '2026-02-01 12:54:43', '2026-02-01 13:55:35', '2026-02-01 13:55:35', '172.19.238.59', 'login'),
+(385, 34, '$2y$10$PK/WuN4Ei3vwzNhf2A8uFuK7RrrtBujGIY2Bw8A6.WKYFkBhjZRdi', 'email', '2026-02-01 14:54:57', '2026-02-01 13:49:57', '2026-02-01 14:49:57', '2026-02-01 14:49:57', '172.19.238.59', 'login'),
+(386, 34, '$2y$10$KqVPfyZDd4IWKsr1xT65/uGkmk9Przlr0EP4RCn607fftHzxckXQG', 'whatsapp', '2026-02-01 14:54:57', '2026-02-01 13:49:57', '2026-02-01 14:50:26', '2026-02-01 14:50:26', '172.19.238.59', 'login'),
+(387, 34, '$2y$10$JDkX2rnx3b2ZHJtMNego9utIA7wlH5NDVT7Pcw3BQRClB2ryL6WZi', 'email', '2026-02-01 16:01:38', '2026-02-01 14:56:38', '2026-02-01 15:56:38', '2026-02-01 15:56:38', '172.19.238.59', 'login'),
+(388, 34, '$2y$10$uEFMVsns0EdWUR06hGqUKOJpMmY4RO0jFUhOrim3.W9JAKJGIcx3K', 'whatsapp', '2026-02-01 16:01:38', '2026-02-01 14:56:38', '2026-02-01 15:57:03', '2026-02-01 15:57:03', '172.19.238.59', 'login'),
+(389, 34, '$2y$10$kwUE/5S8OcAqCL7zrk4W5OBV9e1mwTeO.tGXIqiP6hCBtlfp20yuG', 'email', '2026-02-01 16:25:58', '2026-02-01 15:20:58', '2026-02-01 16:20:58', '2026-02-01 16:20:58', '172.19.238.47', 'login'),
+(390, 34, '$2y$10$usGjPVYk.rmXxT/H/Ffve.DfMDgBnpMeaGyPCa01AGaWVGwVnuygW', 'whatsapp', '2026-02-01 16:25:58', '2026-02-01 15:20:58', '2026-02-01 16:21:36', '2026-02-01 16:21:36', '172.19.238.47', 'login'),
+(391, 34, '$2y$10$wryj54WJsWjJ9wHMZg5wkeKsLkcUT5EGH1JD4KHKGBHpgCjoiFQLa', 'email', '2026-02-01 17:05:47', '2026-02-01 16:00:47', '2026-02-01 17:00:47', '2026-02-01 17:00:47', '172.19.238.59', 'login'),
+(392, 34, '$2y$10$X3VSrLcW9eh0hmGpsIXgk.eDJSmPaRQZtNPn80Vnr2XPVIsYXyfIK', 'whatsapp', '2026-02-01 17:05:48', '2026-02-01 16:00:48', '2026-02-01 17:01:26', '2026-02-01 17:01:26', '172.19.238.59', 'login'),
+(393, 34, '$2y$10$.9aB7tNZ8.qg4NXoBpG2gOjiKbMLN.UIF2O/htQm0704YOsX/XfbS', 'email', '2026-02-01 17:43:28', '2026-02-01 16:38:28', '2026-02-01 17:38:28', '2026-02-01 17:38:28', '172.19.238.59', 'login'),
+(394, 34, '$2y$10$0/26.Q4fTSK/G92.MwDOueBdHyK1baBB9hEmp5B6eSEa5Pnjc8BR6', 'whatsapp', '2026-02-01 17:43:28', '2026-02-01 16:38:28', '2026-02-01 17:39:05', '2026-02-01 17:39:05', '172.19.238.59', 'login'),
+(395, 34, '$2y$10$GMff/l30cPOSzAXt5Shj6e519VSFHJJvMt/8Uh99pCqwxq1.Sr6xe', 'email', '2026-02-01 18:33:10', '2026-02-01 17:28:10', '2026-02-01 18:28:10', '2026-02-01 18:28:10', '172.19.238.59', 'login'),
+(396, 34, '$2y$10$wWbtWGPvOknGsKygPvorN.RwYWnilLgrZwPmQnsQVgYP9jxrlFwV6', 'whatsapp', '2026-02-01 18:33:10', '2026-02-01 17:28:10', '2026-02-01 18:30:37', '2026-02-01 18:30:37', '172.19.238.59', 'login'),
+(397, 34, '$2y$10$ASY4p6u9ph9oGaVqebY.DOYjftB0oCxJfe6DXUwU4X6jlKGI.2E4u', 'email', '2026-02-01 23:17:23', '2026-02-01 22:12:23', '2026-02-01 23:12:23', '2026-02-01 23:12:23', '172.19.238.59', 'login'),
+(398, 34, '$2y$10$tfSq4bkNz6cUIHqO272MJevcqF3J5n4BQZkufhaBJ/TtoFDpy/ljO', 'whatsapp', '2026-02-01 23:17:24', '2026-02-01 22:12:24', '2026-02-01 23:13:22', '2026-02-01 23:13:22', '172.19.238.59', 'login'),
+(399, 34, '$2y$10$CAV9/Lc17XqGzT4vTlagcOfRuAdvkX0evuJ7yxtlWbUzVOqeFxZVy', 'email', '2026-02-01 23:56:05', '2026-02-01 22:51:05', '2026-02-01 23:51:05', '2026-02-01 23:51:05', '172.19.238.59', 'login'),
+(400, 34, '$2y$10$YlaqObQUf6Vq0wpvCusp.uPOXr20eGPRbitRBXVNdaPhEflJ/AcAm', 'whatsapp', '2026-02-01 23:56:06', '2026-02-01 22:51:06', '2026-02-01 23:52:17', '2026-02-01 23:52:17', '172.19.238.59', 'login'),
+(401, 34, '$2y$10$YAxeNfdCdDGj5Gm3WqWJ8OtId9sPJY6CQWgv3MYGzHkqMIvQlNAVq', 'email', '2026-02-02 11:20:12', '2026-02-02 10:15:12', '2026-02-02 11:15:12', '2026-02-02 11:15:12', '10.100.37.59', 'login'),
+(402, 34, '$2y$10$d5Z45dk9clpVkn2.y1Uhs.Cs2WbDrBFrCoaQgnVRIVY5VTRq9buUW', 'whatsapp', '2026-02-02 11:20:12', '2026-02-02 10:15:12', '2026-02-02 11:16:19', '2026-02-02 11:16:19', '10.100.37.59', 'login'),
+(403, 34, '$2y$10$OPWOXdG2ZU5mnvVVbW0Fp.3nVVmzqNFl8R637OQfpXkO.zr2v5/qO', 'email', '2026-02-04 14:32:00', '2026-02-04 13:27:00', '2026-02-04 14:27:00', '2026-02-04 14:27:00', '192.168.1.221', 'login'),
+(404, 34, '$2y$10$IOnjS9dV0UpD8mMKHvMslul5Hf6WRg9ePjtfngkAxJWybMGAOI4H6', 'whatsapp', '2026-02-04 14:32:00', '2026-02-04 13:27:00', NULL, '2026-02-04 14:27:00', '192.168.1.221', 'login'),
+(405, 34, '$2y$10$mFmTqstgkcE1JRcK3/EtWOLaVSKROnpZjHv/B5NJy0olB/6fwT86W', 'email', '2026-02-04 14:38:22', '2026-02-04 13:33:22', '2026-02-04 14:33:22', '2026-02-04 14:33:22', '192.168.1.221', 'login'),
+(406, 34, '$2y$10$dFqw2bseml7wCiW9tC4vwOyyjhMpWPBaUcl9.0WqJ8Knyd4P654ZS', 'whatsapp', '2026-02-04 14:38:22', '2026-02-04 13:33:22', '2026-02-04 14:33:46', '2026-02-04 14:33:46', '192.168.1.221', 'login'),
+(407, 34, '$2y$10$9Juxo4PCn9iG710FTEJIR.Qum.ieEs67yp4oMp4fL0Gm0soWK5Lei', 'email', '2026-02-11 00:41:33', '2026-02-10 23:36:33', '2026-02-11 00:36:33', '2026-02-11 00:36:33', '10.207.100.51', 'login'),
+(408, 34, '$2y$10$KbKs62woO1/cr8DC3kt4MOBYfVPS37pR9sx3MMGXiYnF.ZA6iUnYu', 'whatsapp', '2026-02-11 00:41:33', '2026-02-10 23:36:33', '2026-02-11 00:38:18', '2026-02-11 00:38:18', '10.207.100.51', 'login'),
+(409, 34, '$2y$10$QWC4/9r3h697cDa0hVMZmOHRhnQTT6h.l0O8ud8yWECTkA9mVsdOe', 'email', '2026-02-12 00:41:36', '2026-02-11 23:36:36', '2026-02-12 00:36:36', '2026-02-12 00:36:36', '192.168.1.192', 'login'),
+(410, 34, '$2y$10$L5iQ0r0uDOBFoCelCsNx..eF92rpv0xPMQ5bTHUC3LarG9ziFUazO', 'whatsapp', '2026-02-12 00:41:36', '2026-02-11 23:36:36', NULL, '2026-02-12 00:36:36', '192.168.1.192', 'login'),
+(411, 34, '$2y$10$oOr0092dKXnc9zaqBC.Hz.l.kGq40ZdinaPjWopxn9agd.f2epEjO', 'email', '2026-02-12 01:01:44', '2026-02-11 23:56:44', '2026-02-12 00:56:44', '2026-02-12 00:56:44', '192.168.1.192', 'login'),
+(412, 34, '$2y$10$YzyH.LqFrjOGudLOO74TJOKDAstU/4/WR.KhNcAMggpY/V0C0GdHC', 'whatsapp', '2026-02-12 01:01:44', '2026-02-11 23:56:44', '2026-02-12 00:57:08', '2026-02-12 00:57:08', '192.168.1.192', 'login'),
+(413, 34, '$2y$10$gxXon2cCNj7wMZFOQTo1He54obgOpwiVRF/0J5ckRdLKApZ8qed0W', 'email', '2026-03-02 15:11:59', '2026-03-02 14:06:59', '2026-03-02 15:06:59', '2026-03-02 15:06:59', '192.168.1.84', 'login'),
+(414, 34, '$2y$10$iMcUsDpHrQgKGyr5p51tS.VttVCs2MnIMEYe7cscl2PVdRcD9qCqm', 'whatsapp', '2026-03-02 15:11:59', '2026-03-02 14:06:59', '2026-03-02 15:07:23', '2026-03-02 15:07:23', '192.168.1.84', 'login'),
+(415, 34, '$2y$10$NEJHU1HMVwlVyOumCTAaQev1MIapN.e5LqzCWzzjmBrXV9BLsCj8K', 'email', '2026-03-03 16:11:48', '2026-03-03 15:06:48', '2026-03-03 16:06:48', '2026-03-03 16:06:48', '10.176.85.176', 'login'),
+(416, 34, '$2y$10$bEr59CaOhL.oVcXbIVTED.QuXG4mXtDNmnF6gaPu9qj3kdpsvB1Ii', 'whatsapp', '2026-03-03 16:11:48', '2026-03-03 15:06:48', '2026-03-03 16:07:38', '2026-03-03 16:07:38', '10.176.85.176', 'login'),
+(417, 34, '$2y$10$fPZnYnQlCtPMTNF.xWNwGu5ximZGZWCHC.B06kksji1TvxDHi.pp6', 'email', '2026-03-03 16:48:06', '2026-03-03 15:43:06', '2026-03-03 16:43:06', '2026-03-03 16:43:06', '10.176.85.176', 'login'),
+(418, 34, '$2y$10$2rFPGCklJjAGBuN3OUmrfeZUdm3w1Efv6z0HwNJC49BR1Y6AhAcsy', 'whatsapp', '2026-03-03 16:48:06', '2026-03-03 15:43:06', '2026-03-03 16:46:26', '2026-03-03 16:46:26', '10.176.85.176', 'login'),
+(419, 34, '$2y$10$3Q0Lv7LrWkX.nPHgrI8j9.s0qmpNX5v/OzrRitDguuque6Y/qzMzi', 'email', '2026-03-03 16:51:26', '2026-03-03 15:46:26', '2026-03-03 16:46:26', '2026-03-03 16:46:26', '10.176.85.176', 'login'),
+(420, 34, '$2y$10$jwX7kDTHImoye.RZVEFEVeiHSXM8UmfGpNMh8Csud1/PQ3hrxQ9jC', 'whatsapp', '2026-03-03 16:51:26', '2026-03-03 15:46:26', NULL, '2026-03-03 16:46:26', '10.176.85.176', 'login'),
+(421, 34, '$2y$10$GMBcb6IqwaGMx.PLRNcc5eFCw7/hjeSS.sK03UwQJdW9SgLemqRvO', 'email', '2026-03-03 16:56:47', '2026-03-03 15:51:47', '2026-03-03 16:51:47', '2026-03-03 16:51:47', '10.176.85.176', 'login'),
+(422, 34, '$2y$10$oOC.zr6IH5s9v8KLr1v9kenZ98Nmuy78N7FsulDEobwUsrNi5c43C', 'whatsapp', '2026-03-03 16:56:47', '2026-03-03 15:51:47', '2026-03-03 16:52:15', '2026-03-03 16:52:15', '10.176.85.176', 'login'),
+(423, 34, '$2y$10$YwEdrPgbvs4L2OTEJF1tnuCY0tB97KtwgjttJOlsOYi1DLiIYeIle', 'email', '2026-03-05 11:49:59', '2026-03-05 10:44:59', '2026-03-05 11:44:59', '2026-03-05 11:44:59', '10.96.142.176', 'login'),
+(424, 34, '$2y$10$5v1c4B4kNQ2x.HC8s.VfYeBHwibFf0DwPU1pRS1YBYFS75k/FcHkq', 'whatsapp', '2026-03-05 11:50:00', '2026-03-05 10:45:00', '2026-03-05 11:45:38', '2026-03-05 11:45:38', '10.96.142.176', 'login'),
+(425, 34, '$2y$10$H9G.qwaMz73EURcSWIVv.OzOjb2daK7030Dk6Wnpsg962iv5xIdba', 'email', '2026-03-06 17:47:53', '2026-03-06 16:42:53', '2026-03-06 17:42:53', '2026-03-06 17:42:53', '10.54.140.176', 'login'),
+(426, 34, '$2y$10$ONHT3HKBrWXRR.7NL/Psq.vXje.DVZhi5kHDtZxU67C0soAHsPnHG', 'whatsapp', '2026-03-06 17:47:53', '2026-03-06 16:42:53', '2026-03-06 17:43:18', '2026-03-06 17:43:18', '10.54.140.176', 'login'),
+(427, 34, '$2y$10$VDGnoOfT7VwLp/kxJH08guDGURXs5jmtr34PK8S2WmvzJVgaTBI/a', 'email', '2026-03-07 17:37:01', '2026-03-07 16:32:01', '2026-03-07 17:32:01', '2026-03-07 17:32:01', '10.183.159.176', 'login'),
+(428, 34, '$2y$10$0XtthM0jOFFjZCMJxMd9zuiWoHbu5obpB0uY9iA9/8v0jGQoFsexS', 'whatsapp', '2026-03-07 17:37:01', '2026-03-07 16:32:01', '2026-03-07 17:32:22', '2026-03-07 17:32:22', '10.183.159.176', 'login'),
+(429, 34, '$2y$10$DVkizbqm4ZXXX3hqyX9OZe9MLECrqcrOlATtBfCGvn/FdlacsXIze', 'email', '2026-03-08 09:32:44', '2026-03-08 08:27:44', '2026-03-08 09:27:44', '2026-03-08 09:27:44', '10.209.112.176', 'login'),
+(430, 34, '$2y$10$DZ1dIGt/Nj1I2ttlw1JJ.u5/x8TxSdvT.BMgktCDLveP5pIZe3zpq', 'whatsapp', '2026-03-08 09:32:45', '2026-03-08 08:27:45', NULL, '2026-03-08 09:27:45', '10.209.112.176', 'login'),
+(431, 34, '$2y$10$fPSZ3Ta0FKmnynJcAcvLeOyzZFV87ffaBRutbwb307Xybtu5TsClm', 'email', '2026-03-08 09:43:42', '2026-03-08 08:38:42', '2026-03-08 09:38:42', '2026-03-08 09:38:42', '10.209.112.176', 'login'),
+(432, 34, '$2y$10$kGqnKIoe30J05vhkBo8LPOSw7z3LwzMl/HsKhJdsvzdlYB51lNrDa', 'whatsapp', '2026-03-08 09:43:42', '2026-03-08 08:38:42', NULL, '2026-03-08 09:38:42', '10.209.112.176', 'login'),
+(433, 34, '$2y$10$Ws/ETGADRwu.7nYtyTtBxuFFqg4ymthFVCVyJoPvvKm/TP0WhSk/W', 'email', '2026-03-08 09:50:21', '2026-03-08 08:45:21', '2026-03-08 09:45:21', '2026-03-08 09:45:21', '10.209.112.176', 'login'),
+(434, 34, '$2y$10$Oth/gyQBuMIrjg7z6s40IOzQ4uLDSbRp7er0tz7/JnFn76Rlo.ORS', 'whatsapp', '2026-03-08 09:50:21', '2026-03-08 08:45:21', '2026-03-08 09:46:03', '2026-03-08 09:46:03', '10.209.112.176', 'login'),
+(435, 34, '$2y$10$z1fPCOyUjJ.0/eiZ9dkgxujIcIpeP4AECgK3KkHvOygtIG/U.Bb4C', 'email', '2026-03-08 10:02:21', '2026-03-08 08:57:21', '2026-03-08 09:57:21', '2026-03-08 09:57:21', '10.209.112.176', 'login'),
+(436, 34, '$2y$10$XgBdAJh66FzVDkeKDftN5eVCCJi.TmMAMxxkdWLGHIOvhqP2rpMWK', 'whatsapp', '2026-03-08 10:02:21', '2026-03-08 08:57:21', '2026-03-08 09:57:57', '2026-03-08 09:57:57', '10.209.112.176', 'login'),
+(437, 34, '$2y$10$xw9ooDRsoKrn0L7Sy8hk8Ov1/4Z692u5s6h9cDjeanzGgKUIN5LxG', 'email', '2026-03-08 11:14:17', '2026-03-08 10:09:17', '2026-03-08 11:09:17', '2026-03-08 11:09:17', '10.209.112.176', 'login'),
+(438, 34, '$2y$10$XqhJZUouD.lX3AlRemM2q./d/VxKyDOrN0QHFvDONga0Pj9s6EBi.', 'whatsapp', '2026-03-08 11:14:17', '2026-03-08 10:09:17', '2026-03-08 11:09:39', '2026-03-08 11:09:39', '10.209.112.176', 'login'),
+(439, 34, '$2y$10$/gFHQ.l3btUnJKADszsbOep5yRDq8lFJniOt8pCE1QY97tP5oLYfK', 'email', '2026-03-08 11:14:39', '2026-03-08 10:09:39', '2026-03-08 11:09:39', '2026-03-08 11:09:39', '10.209.112.176', 'login'),
+(440, 34, '$2y$10$mOb.dUeDzz/N4xwJZur5feyN2qusq1FGXzJZf.Sp1Fh9jngfZ7cnG', 'whatsapp', '2026-03-08 11:14:39', '2026-03-08 10:09:39', '2026-03-08 11:10:14', '2026-03-08 11:10:14', '10.209.112.176', 'login'),
+(441, 34, '$2y$10$kz7QthFsc2bWRJ5oxmapruY4BfKRmmChjm9vvneHmWLeqUcwZhc4q', 'email', '2026-03-08 13:56:24', '2026-03-08 12:51:24', '2026-03-08 13:51:24', '2026-03-08 13:51:24', '10.209.112.176', 'login'),
+(442, 34, '$2y$10$Mw4mGZO9DFuyxa5qDtPqqu0hGh.6r0taN64RkJEReTRjoaXgy/.3G', 'whatsapp', '2026-03-08 13:56:24', '2026-03-08 12:51:24', '2026-03-08 13:51:53', '2026-03-08 13:51:53', '10.209.112.176', 'login'),
+(443, 34, '$2y$10$r52xVO9OFZJwkIMjUPY66ezsLTVnLNieMFBC7gMl5dx1QaHo0COMe', 'email', '2026-03-09 14:54:09', '2026-03-09 13:49:09', '2026-03-09 14:49:09', '2026-03-09 14:49:09', '10.173.198.176', 'login'),
+(444, 34, '$2y$10$v0J0Zn1zo7dfc9IGlN21LOPfs/2moHNTQqUwbsS/hx2tgGDpyijyq', 'whatsapp', '2026-03-09 14:54:09', '2026-03-09 13:49:09', NULL, '2026-03-09 14:49:09', '10.173.198.176', 'login'),
+(445, 34, '$2y$10$9aFUOeEEtg2GunSJVjhqu.bj9yMZD4GUUz3mHNTkx/wUM.coEmP3.', 'email', '2026-03-09 15:06:17', '2026-03-09 14:01:17', '2026-03-09 15:01:17', '2026-03-09 15:01:17', '10.173.198.176', 'login'),
+(446, 34, '$2y$10$sQ8DSPFgeqB9X/ij0kdvaeGGcT9nmPx1axn6sdEnb9ekRYBHIX6EO', 'whatsapp', '2026-03-09 15:06:18', '2026-03-09 14:01:18', '2026-03-09 15:04:33', '2026-03-09 15:04:33', '10.173.198.176', 'login'),
+(447, 34, '$2y$10$WlT86w7oEZHlT9yi4uAHYOg3AZ.H0KAG4QKAO7wxv48xSk.Yg1TbO', 'email', '2026-03-09 15:09:33', '2026-03-09 14:04:33', '2026-03-09 15:04:33', '2026-03-09 15:04:33', '10.173.198.176', 'login'),
+(448, 34, '$2y$10$wlbqhwsmqZrM2DsqKAM6f.qqPR066cjrBnGD172mF9VR.ReeI5p5W', 'whatsapp', '2026-03-09 15:09:33', '2026-03-09 14:04:33', '2026-03-09 15:06:09', '2026-03-09 15:06:09', '10.173.198.176', 'login'),
+(449, 34, '$2y$10$TD08Rp3/EyYAC8Pu0dOOguX.LBXDQcCr.mROZpuNs39tu9xAp2llS', 'email', '2026-03-09 15:11:09', '2026-03-09 14:06:09', '2026-03-09 15:06:09', '2026-03-09 15:06:09', '10.173.198.176', 'login'),
+(450, 34, '$2y$10$dGrAWWHrx0EOQLMeRNFuPOeAW7gdYdWJt72CYjegEZZojSPkVKX2i', 'whatsapp', '2026-03-09 15:11:09', '2026-03-09 14:06:09', NULL, '2026-03-09 15:06:09', '10.173.198.176', 'login'),
+(451, 34, '$2y$10$pV3ZHQ5cmkEWAdz7YRBVHuGgBzyCm3qpfI4HuI1Jwo88qHnlWZQDO', 'whatsapp', '2026-03-09 16:54:38', '2026-03-09 15:49:38', '2026-03-09 16:50:30', '2026-03-09 16:50:30', '10.173.198.176', 'login'),
+(452, 34, '$2y$10$vlxYYkktYB4yq6snzTcyY./LsgF33KL9Qv6OBq/vgPy3lMDo5hkwu', 'whatsapp', '2026-03-09 17:06:20', '2026-03-09 16:01:20', '2026-03-09 17:01:48', '2026-03-09 17:01:48', '10.173.198.176', 'login'),
+(453, 34, '$2y$10$T8LSg4uD6pBo7FRlMUIF3OHOjCcoCe.Hwbst72FsJ8asvOART1PUa', 'whatsapp', '2026-03-09 17:11:12', '2026-03-09 16:06:12', '2026-03-09 17:06:26', '2026-03-09 17:06:26', '10.173.198.176', 'login'),
+(454, 34, '$2y$10$Yu7UssaWq2gN07WogEyCXOEn/JdgWJJVdl6Wrz5mXeX0kkdQoBVTm', 'whatsapp', '2026-03-09 17:41:10', '2026-03-09 16:36:10', '2026-03-09 17:36:38', '2026-03-09 17:36:38', '10.173.198.176', 'login'),
+(455, 43, '$2y$10$YwhHu6sMzLlIc8FHdX36o./MkHw0Lg/pagdipQeFzVVJg95wraWZW', 'whatsapp', '2026-03-09 17:42:55', '2026-03-09 16:37:55', NULL, '2026-03-09 17:37:55', '10.173.198.176', 'login'),
+(456, 43, '$2y$10$TDdiscSMIU97nRr.IVOdAecdO0nbbedi.XnOgKQatcK/kilEmzNe2', 'whatsapp', '2026-03-09 18:52:48', '2026-03-09 17:47:48', '2026-03-09 18:48:11', '2026-03-09 18:48:11', '10.173.198.176', 'login'),
+(457, 43, '$2y$10$5ivyGBQu6f37JTUc4NQFReAqpk0SoNecG.OZCmMAt3B9deQLXFiH.', 'email', '2026-03-09 18:59:33', '2026-03-09 17:54:33', '2026-03-09 18:54:38', '2026-03-09 18:54:38', '10.173.198.176', 'login'),
+(458, 43, '$2y$10$EHbQ5cJ3H/TuBCOYI9VtfekKC7kXaLKtH67Ke3MjmT6CG5ZkJzLHy', 'whatsapp', '2026-03-09 18:59:38', '2026-03-09 17:54:38', NULL, '2026-03-09 18:54:38', '10.173.198.176', 'login'),
+(459, 34, '$2y$10$0u/3PTs/oFXKs7oDPeSaWeYEcKJx.YvIdy4U4pWlCqNc1DVadmmTq', 'whatsapp', '2026-03-14 13:48:14', '2026-03-14 12:43:14', NULL, '2026-03-14 13:43:14', '172.16.217.176', 'login'),
+(460, 34, '$2y$10$vxhQo0oleKuXRxyXYfTK0.JI6pzi3bzUKQkUu/HtEqye.BhET4MEu', 'whatsapp', '2026-03-14 13:54:56', '2026-03-14 12:49:56', NULL, '2026-03-14 13:49:56', '172.16.217.176', 'login'),
+(461, 43, '$2y$10$2rvJQh2FwyBtZlMm5Tppru1xaFv4PeI0B.SLSpVZgws/xf9ty6uLW', 'whatsapp', '2026-03-14 13:57:37', '2026-03-14 12:52:37', NULL, '2026-03-14 13:52:37', '172.16.217.176', 'login'),
+(462, 34, '$2y$10$V0tYyr5gTAzu5l3c3dlqM.bAwanOQQ1V3X4MBVyXSJIOANifx/o82', 'whatsapp', '2026-03-14 14:04:20', '2026-03-14 12:59:20', '2026-03-14 14:00:59', '2026-03-14 14:00:59', '172.16.217.176', 'login'),
+(463, 34, '$2y$10$gqCDAIRyzjqzKm8MJjLgdOvvR6yOfHXnBGukbw30s1UKsmkcN4yEC', 'whatsapp', '2026-03-14 14:05:59', '2026-03-14 13:00:59', '2026-03-14 14:01:57', '2026-03-14 14:01:57', '172.16.217.176', 'login'),
+(464, 43, '$2y$10$yfIS7yJ/qhPCoMCuMXPmRuZ6f7uDSzfxaNnToLjjibzBe39yZLItu', 'whatsapp', '2026-03-14 14:07:34', '2026-03-14 13:02:34', '2026-03-14 14:03:11', '2026-03-14 14:03:11', '172.16.217.176', 'login'),
+(465, 43, '$2y$10$vag4eD1SJ2kVkqRaG/7XouMF9ZoikeRVC6YpdGlgoQOhlw/aDJi.G', 'whatsapp', '2026-03-14 14:15:18', '2026-03-14 13:10:18', '2026-03-14 14:15:01', '2026-03-14 14:15:01', '172.16.217.176', 'login'),
+(466, 43, '$2y$10$IYoR6TWBDD6/Mx.Ugc90OOYCP74nAIPRMJCAPFhVMPp6IzDG30uu2', 'whatsapp', '2026-03-14 14:21:53', '2026-03-14 13:16:53', '2026-03-14 14:17:13', '2026-03-14 14:17:13', '172.16.217.176', 'login'),
+(467, 43, '$2y$10$6kWByLhQg0Bij5TPsQ6yq.7rrQOdINoRry/lV7ZmlRY3Ktov6peYy', 'whatsapp', '2026-03-14 14:35:55', '2026-03-14 13:30:55', '2026-03-14 14:31:31', '2026-03-14 14:31:31', '172.16.217.176', 'login'),
+(468, 34, '$2y$10$ffG9rNrOPPp5lAb6hBkgDerbVg2P/2vGVkODT8xAfa1DSdVRX6/HO', 'whatsapp', '2026-03-14 14:37:13', '2026-03-14 13:32:13', '2026-03-14 14:32:43', '2026-03-14 14:32:43', '172.16.217.176', 'login'),
+(469, 34, '$2y$10$cGaZtMAUW9BUkD.Gg/AKAulVamjVVoDRk8CB6irpJr9YyUUPPpb12', 'email', '2026-03-14 14:44:32', '2026-03-14 13:39:32', '2026-03-14 14:39:53', '2026-03-14 14:39:53', '172.16.217.176', 'login'),
+(470, 34, '$2y$10$Xciq1dvB9ZgsPaBSCMIKfOKIyVgErs5GgmBWQLndlG2L5YJTZNg8y', 'whatsapp', '2026-03-14 14:44:53', '2026-03-14 13:39:53', NULL, '2026-03-14 14:39:53', '172.16.217.176', 'login'),
+(471, 34, '$2y$10$UGCOlTAkemRAcb3AABX3d.7oCk94Olm24cYW05TVw8RpS1w4lfNZ2', 'email', '2026-03-14 15:03:23', '2026-03-14 13:58:23', '2026-03-14 14:58:44', '2026-03-14 14:58:44', '172.16.217.176', 'login'),
+(472, 34, '$2y$10$XtUmqQe.odsB4zucoq90EeSK2jlEclrTZGIjQLmxe1ZzxzAdM7sca', 'whatsapp', '2026-03-14 15:03:44', '2026-03-14 13:58:44', '2026-03-14 15:00:08', '2026-03-14 15:00:08', '172.16.217.176', 'login'),
+(473, 34, '$2y$10$qLJDkAFUNEfI.qZFS7Kb5.1lCvqMNGOSv4AIMM46LwOLgv8/mdZgG', 'email', '2026-03-14 15:05:08', '2026-03-14 14:00:08', '2026-03-14 15:00:29', '2026-03-14 15:00:29', '172.16.217.176', 'login'),
+(474, 34, '$2y$10$gytPOjyrK17NQhoaZZpMauRknylMO8tdLZgcMueogmsurkd2ZATja', 'whatsapp', '2026-03-14 15:05:29', '2026-03-14 14:00:29', '2026-03-14 15:02:06', '2026-03-14 15:02:06', '172.16.217.176', 'login'),
+(475, 34, '$2y$10$i3Yt5hjOZcSwv89A85QMaOXu.ScCRRsQrnOpX3BJ64t1roHoekxiq', 'email', '2026-03-14 15:07:06', '2026-03-14 14:02:06', '2026-03-14 15:02:27', '2026-03-14 15:02:27', '172.16.217.176', 'login'),
+(476, 34, '$2y$10$nAMcpbB4uQ7u9yik9CzhCuogO7/BUGRF8LZj0EFbgNlmuVQqowu96', 'whatsapp', '2026-03-14 15:07:28', '2026-03-14 14:02:28', '2026-03-14 15:05:13', '2026-03-14 15:05:13', '172.16.217.176', 'login'),
+(477, 33, '$2y$10$ZeJyJyp6YS5XvaI26FjaNebYqVl/REWQ4pR4hnqcFyMemX2x/GMfG', 'email', '2026-03-14 16:25:41', '2026-03-14 15:20:41', '2026-03-14 16:21:02', '2026-03-14 16:21:02', '172.16.217.176', 'login'),
+(478, 33, '$2y$10$j9kqNjTk6oJiW7n9HxuBv.bcmCl/ahX./izUdo2oxEdqQiQjFnQUi', 'whatsapp', '2026-03-14 16:26:02', '2026-03-14 15:21:02', '2026-03-14 16:21:14', '2026-03-14 16:21:14', '172.16.217.176', 'login'),
+(479, 34, '$2y$10$idCTFOsN/SqlGNiRxQuRIu1McOAm/QF3dZ4kQEHO6dGwa08Ddw3DO', 'email', '2026-03-14 16:27:24', '2026-03-14 15:22:24', '2026-03-14 16:22:45', '2026-03-14 16:22:45', '172.16.217.176', 'login'),
+(480, 34, '$2y$10$ZANsyH3tOmlei8JtbayhIOVE9kWIL9rwxKK9.hxVbib4LBs11js1a', 'whatsapp', '2026-03-14 16:27:46', '2026-03-14 15:22:46', NULL, '2026-03-14 16:22:46', '172.16.217.176', 'login'),
+(481, 34, '$2y$10$EEr.WGvZ6m.EG85vzs4UTOSK8Vg9J4eS14oSPe4WQAe5tpVA9kop2', 'email', '2026-03-14 16:36:03', '2026-03-14 15:31:03', '2026-03-14 16:31:24', '2026-03-14 16:31:24', '172.16.217.176', 'login'),
+(482, 34, '$2y$10$1Axnt.V2ogaCEl5P4u6VMOZwusmyZ9bVsLcY/DuuOwnw6QHm4dM5i', 'whatsapp', '2026-03-14 16:36:24', '2026-03-14 15:31:24', NULL, '2026-03-14 16:31:24', '172.16.217.176', 'login'),
+(483, 34, '$2y$10$q.JNvwl9nRNh6OrAmCK0xeRQUW/bb7eCbPTqQVuOrz9Ym/JOrudqi', 'email', '2026-03-14 16:42:40', '2026-03-14 15:37:40', '2026-03-14 16:37:44', '2026-03-14 16:37:44', '172.16.217.176', 'login'),
+(484, 34, '$2y$10$LpqoVtPY8eJMSvyUjoUI/.yxYQ5.k6Bj0ZYieJ62r4ICDQVKG1zhe', 'whatsapp', '2026-03-14 16:42:44', '2026-03-14 15:37:44', '2026-03-14 16:39:11', '2026-03-14 16:39:11', '172.16.217.176', 'login'),
+(485, 34, '$2y$10$o/637uYJLldVWbvNCa075eoOVw3USyBjhvNsHZWsqNkH2nuQVSfeO', 'email', '2026-03-14 16:45:30', '2026-03-14 15:40:30', '2026-03-14 16:40:33', '2026-03-14 16:40:33', '172.16.217.176', 'login'),
+(486, 34, '$2y$10$iwg.IEowyve9HfrLjhdKH.zeeSGi3KKZTYe0gapZh2RJSSb6vO.jC', 'whatsapp', '2026-03-14 16:45:33', '2026-03-14 15:40:33', NULL, '2026-03-14 16:40:33', '172.16.217.176', 'login'),
+(487, 34, '$2y$10$gxUZ6DbwezpCqTSf0KjSYOhbyo4UiBHt2TfAeTJGufdhgQnSHowP.', 'email', '2026-03-14 17:01:06', '2026-03-14 15:56:06', '2026-03-14 16:56:10', '2026-03-14 16:56:10', '172.16.217.176', 'login'),
+(488, 34, '$2y$10$aaYSLkAx8vJJsMw4gv4uaOIAG2Fr5lvNLZvqJ9Uv1rGE37RfNyCE2', 'whatsapp', '2026-03-14 17:01:11', '2026-03-14 15:56:11', '2026-03-14 16:59:51', '2026-03-14 16:59:51', '172.16.217.176', 'login'),
+(489, 34, '$2y$10$AXf/YOdpvCx99z8foG77b.kEDy9vPTYUuwpIHFlVrzAA99XIISP0m', 'email', '2026-03-14 17:04:51', '2026-03-14 15:59:51', '2026-03-14 17:00:03', '2026-03-14 17:00:03', '172.16.217.176', 'login'),
+(490, 34, '$2y$10$k0DWG1sHUZ0RK.UQ0Jj.cuDHR4p7FzUZFsI5i1/sXqznHHSD0uGOK', 'whatsapp', '2026-03-14 17:05:03', '2026-03-14 16:00:03', NULL, '2026-03-14 17:00:03', '172.16.217.176', 'login'),
+(491, 34, '$2y$10$YNVhKoejOZDmQK2zRN3zXORicuMn8lilvCoAViuouWHdSb5toy6JW', 'email', '2026-03-14 17:14:35', '2026-03-14 16:09:35', '2026-03-14 17:09:38', '2026-03-14 17:09:38', '172.16.217.176', 'login'),
+(492, 34, '$2y$10$zsMmaOe.a6G9uedkHoYkRehK5oyD2kEGx9CZz7m3asPQaOuvtrTkm', 'whatsapp', '2026-03-14 17:14:38', '2026-03-14 16:09:38', '2026-03-14 17:11:12', '2026-03-14 17:11:12', '172.16.217.176', 'login'),
+(493, 34, '$2y$10$Fljqrv7LdbaW0Ur8Zb8B1.aNPbs9MvVPf6oyzm5w/Kv9w1TIVuQq2', 'email', '2026-03-14 17:19:54', '2026-03-14 16:14:54', '2026-03-14 17:14:57', '2026-03-14 17:14:57', '172.16.217.176', 'login'),
+(494, 34, '$2y$10$b6IPCWszlhL0KQc/vGMXFeyNXbMZIOHzl5XWJN95veAWQVrsB//yS', 'whatsapp', '2026-03-14 17:19:58', '2026-03-14 16:14:58', '2026-03-14 17:15:14', '2026-03-14 17:15:14', '172.16.217.176', 'login'),
+(495, 34, '$2y$10$w9pjs0J5R1xSNLcxDPYq8e38zt.QKKFtTHZ/DPg7J198rLSHaUau.', '', '2026-03-14 17:51:07', '2026-03-14 16:46:07', '2026-03-14 17:47:27', '2026-03-14 17:47:27', '172.16.217.176', 'login'),
+(496, 34, '$2y$10$gnEWhKEGSHu8SAUzFlwls.XVFFjubdr9VIchDKOsIJLOgQvXjF/za', '', '2026-03-18 03:15:07', '2026-03-18 02:10:07', '2026-03-18 03:10:23', '2026-03-18 03:10:23', '10.99.43.176', 'login'),
+(497, 34, '$2y$10$PvNsgVfWBP/9OctVfiZWFOLlAAopbTDodtZE0M/D7T5997QZs2AsG', '', '2026-03-19 10:49:04', '2026-03-19 09:44:04', '2026-03-19 10:44:26', '2026-03-19 10:44:26', '10.251.57.176', 'login'),
+(498, 34, '$2y$10$vbGY2spIWfxbCV6kYV19uOvIjNpNTtnn37IHzjlzNI2hVPUa56.ma', '', '2026-03-19 12:38:23', '2026-03-19 11:33:23', '2026-03-19 12:33:41', '2026-03-19 12:33:41', '10.251.57.176', 'login'),
+(499, 34, '$2y$10$V3HYqphePnsw9MjORS5f.eXIGBq6/6bw2g8QT4O3ASztERWux.wzO', '', '2026-03-19 14:37:47', '2026-03-19 13:32:47', '2026-03-19 14:33:09', '2026-03-19 14:33:09', '10.251.57.176', 'login');
+INSERT INTO `otps` (`id`, `user_id`, `otp_hash`, `channel`, `expires_at`, `created_at`, `used_at`, `updated_at`, `ip_address`, `purpose`) VALUES
+(500, 34, '$2y$10$YqKZumPjzEhfcEqqT.BtOuT2qQnxJ3UwEmpirknnUYl8zx9KdMhg2', '', '2026-03-19 22:34:52', '2026-03-19 21:29:52', '2026-03-19 22:30:07', '2026-03-19 22:30:07', '10.180.216.176', 'login'),
+(501, 34, '$2y$10$R7EJgEEdtZM.B76TMjLPI.FVaQ1l0IvjvQ0eiTwK/5CAGoXQ4b30O', '', '2026-03-21 16:48:20', '2026-03-21 15:43:20', '2026-03-21 16:43:48', '2026-03-21 16:43:48', '192.168.145.176', 'login'),
+(502, 34, '$2y$10$LpBptcKciO8KY5vRY/ICmOCjpeF9TZAf/JxrwBAZc88Ef8VJNSi8C', '', '2026-05-12 14:09:38', '2026-05-12 13:04:38', '2026-05-12 14:06:30', '2026-05-12 14:06:30', '192.168.1.84', 'login');
 
 -- --------------------------------------------------------
 
@@ -652,17 +973,128 @@ CREATE TABLE `permissions` (
 --
 
 INSERT INTO `permissions` (`id`, `group_name`, `permission_name`, `description`, `created_at`, `updated_at`) VALUES
-(1, 'Users', 'view-users', 'View list of users', NULL, NULL),
-(2, 'Users', 'create-users', 'Create a new user', NULL, NULL),
-(3, 'Users', 'edit-users', 'Edit user details', NULL, NULL),
-(4, 'Users', 'delete-users', 'Delete a user', NULL, NULL),
-(5, 'Providers', 'view-providers', 'View list of providers', NULL, NULL),
+(1, 'System', 'view-users', 'View list of admin users', NULL, '2026-03-14 16:53:43'),
+(2, 'System', 'create-users', 'Create a new user', NULL, '2026-03-09 17:00:22'),
+(3, 'System', 'edit-users', 'Edit admin user details', NULL, '2026-03-14 16:53:43'),
+(4, 'System', 'delete-users', 'Delete users', NULL, '2026-03-09 17:00:22'),
+(5, 'People', 'view-providers', 'View providers', NULL, '2026-03-14 16:53:43'),
 (6, 'Providers', 'approve-providers', 'Approve or reject provider applications', NULL, NULL),
-(7, 'System', 'manage-roles', 'Manage roles and permissions', NULL, NULL),
+(7, 'System', 'manage-roles', 'Manage roles and permissions', NULL, '2026-03-14 16:53:43'),
 (8, 'Reports', 'view-reports', 'View system reports', NULL, NULL),
-(9, 'Finance', 'view-ledger', 'View financial ledger', NULL, NULL),
-(10, 'Finance', 'manage-payouts', 'Manage provider payouts', NULL, NULL),
-(11, 'Finance', 'manage-refunds', 'Manage customer refunds', NULL, NULL);
+(9, 'Finance', 'view-ledger', 'View financial ledger summary', NULL, '2026-03-14 16:53:43'),
+(10, 'Finance', 'manage-payouts', 'Mark payouts as failed', NULL, '2026-03-14 16:53:43'),
+(11, 'Finance', 'manage-refunds', 'Manage customer refunds', NULL, NULL),
+(12, 'Dashboard', 'view-dashboard', 'Access admin dashboard', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(13, 'Operations', 'view-active-jobs', 'View active jobs', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(14, 'Operations', 'view-pending-jobs', 'View pending jobs', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(15, 'Operations', 'view-scheduled-jobs', 'View scheduled jobs', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(16, 'Operations', 'view-cancelled-jobs', 'View cancelled jobs', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(17, 'Operations', 'use-dispatch-center', 'Access dispatch center', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(18, 'Operations', 'manage-escalations', 'View and manage escalations', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(19, 'People', 'view-customers', 'View customers', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(20, 'People', 'manage-provider-applications', 'Review provider applications', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(21, 'People', 'view-verification-queue', 'View verification queue item', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(22, 'People', 'manage-verification-queue', 'Escalate verification cases', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(23, 'People', 'view-provider-performance', 'View provider disputes', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(24, 'Finance', 'view-earnings-overview', 'View earnings overview', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(25, 'Finance', 'view-payouts', 'View provider payout summary', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(26, 'Finance', 'view-platform-commissions', 'View platform commission summary', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(27, 'Finance', 'manage-platform-commissions', 'Manage platform commission configuration', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(28, 'Finance', 'view-refunds-disputes', 'View dispute summary', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(29, 'Finance', 'manage-refunds-disputes', 'Manage refund statuses', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(30, 'Configuration', 'manage-categories', 'Manage services', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(31, 'Configuration', 'manage-pricing', 'Update pricing adjustment status', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(32, 'Configuration', 'manage-coverage', 'Update coverage', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(33, 'Configuration', 'manage-availability', 'Update availability rule status', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(34, 'Configuration', 'manage-promotions', 'Update promotion status', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(35, 'Configuration', 'manage-appearance', 'Manage appearance configuration', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(42, 'System', 'assign-user-roles', 'Assign roles to admin users', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(43, 'System', 'create-admin-users', 'Create admin users', '2026-03-08 17:33:49', '2026-03-09 17:00:22'),
+(44, 'System', 'manage-integrations', 'Manage integrations', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(45, 'System', 'manage-feature-toggles', 'Manage feature toggles', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(46, 'System', 'manage-maintenance-mode', 'Manage maintenance mode', '2026-03-08 17:33:49', '2026-03-14 16:53:43'),
+(47, 'Reports', 'view-reports-dashboard', 'View executive reports dashboard', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(48, 'Reports', 'view-operations-reports', 'View operations reports', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(49, 'Reports', 'view-provider-reports', 'View provider reports', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(50, 'Reports', 'view-customer-reports', 'View customer reports', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(51, 'Reports', 'view-finance-reports', 'View finance reports', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(52, 'Reports', 'view-promotion-reports', 'View promotion reports', '2026-03-14 16:53:43', '2026-03-14 16:53:43'),
+(53, 'Reports', 'export-reports', 'Export reports to CSV or printable PDF', '2026-03-14 16:53:43', '2026-03-14 16:53:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pricing_rules`
+--
+
+CREATE TABLE `pricing_rules` (
+  `id` int UNSIGNED NOT NULL,
+  `label` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `scope` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'category',
+  `category_id` int UNSIGNED DEFAULT NULL,
+  `service_id` int UNSIGNED DEFAULT NULL,
+  `charge_type` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'flat',
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `status` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `notes` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `promotions`
+--
+
+CREATE TABLE `promotions` (
+  `id` int UNSIGNED NOT NULL,
+  `title` varchar(150) COLLATE utf8mb4_general_ci NOT NULL,
+  `description` text COLLATE utf8mb4_general_ci,
+  `promotion_type` enum('global','service','provider','coupon') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'global',
+  `discount_type` enum('percent','fixed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'percent',
+  `discount_value` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `code` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `category_id` int UNSIGNED DEFAULT NULL,
+  `service_id` int UNSIGNED DEFAULT NULL,
+  `provider_id` int DEFAULT NULL,
+  `start_date` datetime DEFAULT NULL,
+  `end_date` datetime DEFAULT NULL,
+  `usage_limit` int UNSIGNED DEFAULT NULL,
+  `status` enum('active','inactive') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `created_by` int UNSIGNED DEFAULT NULL,
+  `updated_by` int UNSIGNED DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `promotions`
+--
+
+INSERT INTO `promotions` (`id`, `title`, `description`, `promotion_type`, `discount_type`, `discount_value`, `code`, `category_id`, `service_id`, `provider_id`, `start_date`, `end_date`, `usage_limit`, `status`, `created_by`, `updated_by`, `created_at`, `updated_at`) VALUES
+(1, 'Discount Fees', '20 percent of this month', 'global', 'percent', 20.00, '', NULL, NULL, NULL, '2026-03-06 00:00:00', '2026-04-22 00:00:00', 100, 'active', 34, 34, '2026-03-08 11:12:15', '2026-03-31 16:55:02'),
+(11, '10,000 percent discount on renewable energy jobs', '20 percent discount on renewable energy jobs this month for the first 30 persons', 'service', 'fixed', 10000.00, NULL, NULL, 3, NULL, '2026-03-07 00:00:00', '2026-04-30 00:00:00', 30, 'active', 34, 34, '2026-03-08 11:36:06', '2026-03-31 16:40:34'),
+(12, 'Plumbing Discount', '25 percent off', 'service', 'percent', 25.00, NULL, 1, NULL, NULL, '2026-03-09 00:00:00', '2026-03-31 00:00:00', 200, 'active', 34, 34, '2026-03-08 11:57:08', '2026-03-08 11:57:08'),
+(13, 'Discount for this month', '15,000 flat rebate', 'service', 'fixed', 15000.00, NULL, 3, NULL, NULL, '2026-03-09 00:00:00', '2026-03-31 00:00:00', 100, 'active', 34, 34, '2026-03-08 12:02:24', '2026-03-08 12:02:24');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `promotion_usages`
+--
+
+CREATE TABLE `promotion_usages` (
+  `id` int UNSIGNED NOT NULL,
+  `promotion_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED NOT NULL,
+  `job_id` int UNSIGNED DEFAULT NULL,
+  `payment_id` int UNSIGNED DEFAULT NULL,
+  `original_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `discount_applied` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `final_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `created_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -738,7 +1170,7 @@ CREATE TABLE `refunds` (
 --
 
 INSERT INTO `refunds` (`id`, `user_id`, `transaction_id`, `amount`, `reason`, `status`, `submitted_at`, `processed_by`, `processed_at`) VALUES
-(1, 31, 1, 30000.00, 'Bad service', 'pending', '2026-01-15 23:19:19', NULL, NULL);
+(1, 31, 1, 30000.00, 'Bad service', 'approved', '2026-01-15 23:19:19', 34, '2026-02-01 23:55:44');
 
 -- --------------------------------------------------------
 
@@ -760,7 +1192,8 @@ CREATE TABLE `roles` (
 
 INSERT INTO `roles` (`id`, `role_name`, `description`, `created_at`, `updated_at`) VALUES
 (1, 'costomer care', '', '2026-01-18 14:36:57', '2026-01-18 14:36:57'),
-(2, 'HR', '', '2026-01-18 14:49:37', '2026-01-18 14:49:37');
+(2, 'HR', '', '2026-01-18 14:49:37', '2026-01-18 14:49:37'),
+(3, 'Sole Admin', NULL, '2026-03-14 14:07:19', '2026-03-14 14:07:19');
 
 -- --------------------------------------------------------
 
@@ -779,13 +1212,74 @@ CREATE TABLE `role_permissions` (
 --
 
 INSERT INTO `role_permissions` (`id`, `role_id`, `permission_id`) VALUES
-(1, 1, 1),
-(2, 1, 2),
-(3, 1, 5),
-(4, 1, 7),
-(5, 1, 8),
-(6, 1, 9),
-(7, 1, 11);
+(99, 1, 5),
+(100, 1, 7),
+(101, 1, 8),
+(102, 1, 19),
+(103, 1, 20),
+(104, 1, 21),
+(105, 1, 22),
+(106, 1, 23),
+(108, 1, 13),
+(109, 1, 14),
+(110, 1, 15),
+(111, 1, 18),
+(112, 1, 17),
+(113, 1, 43),
+(114, 1, 2),
+(115, 1, 42),
+(116, 1, 3),
+(117, 1, 45),
+(118, 1, 44),
+(119, 1, 46),
+(120, 1, 1),
+(121, 3, 35),
+(122, 3, 33),
+(123, 3, 30),
+(124, 3, 32),
+(125, 3, 31),
+(126, 3, 34),
+(127, 3, 12),
+(128, 3, 10),
+(129, 3, 27),
+(130, 3, 11),
+(131, 3, 29),
+(132, 3, 24),
+(133, 3, 9),
+(134, 3, 25),
+(135, 3, 26),
+(136, 3, 28),
+(137, 3, 18),
+(138, 3, 17),
+(139, 3, 13),
+(140, 3, 16),
+(141, 3, 14),
+(142, 3, 15),
+(143, 3, 20),
+(144, 3, 22),
+(145, 3, 19),
+(146, 3, 23),
+(147, 3, 5),
+(148, 3, 21),
+(149, 3, 6),
+(150, 3, 8),
+(151, 3, 42),
+(152, 3, 43),
+(153, 3, 2),
+(154, 3, 4),
+(155, 3, 3),
+(156, 3, 45),
+(157, 3, 44),
+(158, 3, 46),
+(159, 3, 7),
+(160, 3, 1),
+(161, 3, 53),
+(162, 3, 50),
+(163, 3, 51),
+(164, 3, 48),
+(165, 3, 52),
+(166, 3, 49),
+(167, 3, 47);
 
 -- --------------------------------------------------------
 
@@ -799,6 +1293,7 @@ CREATE TABLE `services` (
   `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `description` text COLLATE utf8mb4_general_ci,
   `status` enum('active','inactive') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `view_count` int UNSIGNED DEFAULT '0',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -807,14 +1302,81 @@ CREATE TABLE `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`id`, `category_id`, `name`, `description`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 'Bore Hole', 'office or home', 'active', '2026-01-17 19:23:03', '2026-01-18 07:31:48'),
-(2, 1, 'Overhead tank', 'fixing', 'active', '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
-(3, 2, 'renewable', 'solar', 'active', '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
-(4, 2, 'grid', 'grid', 'active', '2026-01-17 19:40:32', '2026-01-17 19:40:32'),
-(5, 3, 'furniture', 'all kinds', 'active', '2026-01-17 19:59:15', '2026-01-17 19:59:15'),
-(6, 4, 'Residential', 'Home cleaning and chores', 'active', '2026-01-18 10:43:45', '2026-01-18 10:43:45'),
-(7, 2, 'wiring', 'house or office', 'active', '2026-01-25 12:50:22', '2026-01-25 12:50:22');
+INSERT INTO `services` (`id`, `category_id`, `name`, `description`, `status`, `view_count`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Bore Hole', 'office or home', 'active', 1, '2026-01-17 19:23:03', '2026-04-08 17:45:18'),
+(2, 1, 'Overhead tank', 'fixing', 'active', 0, '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
+(3, 2, 'renewable', 'solar', 'active', 0, '2026-01-17 18:39:14', '2026-01-17 18:39:14'),
+(4, 2, 'grid', 'grid', 'active', 0, '2026-01-17 19:40:32', '2026-01-17 19:40:32'),
+(5, 3, 'furniture', 'all kinds', 'active', 0, '2026-01-17 19:59:15', '2026-01-17 19:59:15'),
+(6, 4, 'Residential', 'Home cleaning and chores', 'active', 0, '2026-01-18 10:43:45', '2026-01-18 10:43:45'),
+(7, 2, 'wiring', 'house or office', 'active', 0, '2026-01-25 12:50:22', '2026-01-25 12:50:22');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_pricing_adjustments`
+--
+
+CREATE TABLE `service_pricing_adjustments` (
+  `id` int UNSIGNED NOT NULL,
+  `profile_id` int UNSIGNED NOT NULL,
+  `label` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `adjustment_type` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'flat',
+  `value` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `max_allowed` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `applies_phase` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'execution',
+  `requires_client_approval` tinyint(1) NOT NULL DEFAULT '1',
+  `status` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `service_pricing_adjustments`
+--
+
+INSERT INTO `service_pricing_adjustments` (`id`, `profile_id`, `label`, `adjustment_type`, `value`, `max_allowed`, `applies_phase`, `requires_client_approval`, `status`, `created_at`, `updated_at`) VALUES
+(1, 2, 'ammendment', 'percent', 50.00, 70.00, 'execution', 1, 'active', '2026-02-12 01:11:25', '2026-02-12 01:11:25');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `service_pricing_profiles`
+--
+
+CREATE TABLE `service_pricing_profiles` (
+  `id` int UNSIGNED NOT NULL,
+  `service_id` int UNSIGNED NOT NULL,
+  `pricing_basis` varchar(40) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'quote_after_inspection',
+  `inspection_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `minimum_job_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `price_band_min` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `price_band_max` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `currency` varchar(10) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'NGN',
+  `status` varchar(30) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
+  `notes_for_client` text COLLATE utf8mb4_general_ci,
+  `notes_for_provider` text COLLATE utf8mb4_general_ci,
+  `allow_band_override` tinyint(1) NOT NULL DEFAULT '0',
+  `max_override_percent` int NOT NULL DEFAULT '0',
+  `require_admin_review` tinyint(1) NOT NULL DEFAULT '0',
+  `auto_flag_dispute_threshold` int NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `band_is_per_unit` tinyint(1) DEFAULT '0',
+  `unit_label` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `warn_variance_percent` int DEFAULT '25',
+  `critical_variance_percent` int DEFAULT '60',
+  `require_reason_over_critical` tinyint(1) DEFAULT '1'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `service_pricing_profiles`
+--
+
+INSERT INTO `service_pricing_profiles` (`id`, `service_id`, `pricing_basis`, `inspection_fee`, `minimum_job_fee`, `price_band_min`, `price_band_max`, `currency`, `status`, `notes_for_client`, `notes_for_provider`, `allow_band_override`, `max_override_percent`, `require_admin_review`, `auto_flag_dispute_threshold`, `created_at`, `updated_at`, `band_is_per_unit`, `unit_label`, `warn_variance_percent`, `critical_variance_percent`, `require_reason_over_critical`) VALUES
+(1, 1, 'fixed', 1000.00, 10000.00, 10000.00, 40000.00, 'NGN', 'active', 'This covers inspection and logistics', 'You will be paid for inspection now', 1, 100, 1, 200, '2026-02-04 14:39:45', '2026-02-04 14:42:46', 0, NULL, 25, 60, 1),
+(2, 4, 'quote_after_inspection', 2000.00, 4000.00, 20000.00, 2000000.00, 'NGN', 'active', 'Hello client', 'Hello client', 0, 100, 0, 20, '2026-02-12 01:03:44', '2026-02-12 01:03:44', 0, NULL, 25, 60, 1),
+(3, 5, 'unit', 2500.00, 10000.00, 25000.00, 35000.00, 'NGN', 'active', NULL, NULL, 0, 100, 1, 30, '2026-02-12 01:43:41', '2026-02-12 01:43:41', 0, NULL, 25, 60, 1);
 
 -- --------------------------------------------------------
 
@@ -853,13 +1415,14 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `name`, `email`, `phone`, `password`, `role`, `kyc_status`, `decision_reason`, `created_at`, `updated_at`, `status`, `is_provider`, `provider_status`, `approved_by`, `approved_at`, `company_name`, `is_company`, `location`, `services`, `provider_applied_at`, `google_id`) VALUES
 (31, 'Sadiya Hassan', 'seamlesscallservices@gmail.com', '+2348012345678', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Provider', 'Verified', '', '2026-01-07 12:43:24', '2026-01-30 07:24:00', 'active', 1, 'approved', 34, '2026-01-28 13:31:16', 'msnsnsn', 0, 'sgsgsgs', NULL, '2026-01-28 12:51:13', NULL),
 (33, 'Provider Gunnu', 'prov@gmail.com', '+2348088888888', '$2y$10$c6A/P9..w81BpCB1e/G75upaJhlpkvnheXZnP1K9YkqzWCmutu40a', 'Provider', 'Rejected', '', '2026-01-07 23:08:15', '2026-01-29 17:03:56', 'active', 1, 'approved', NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
-(34, 'IDRIS BELLO', 'idrisalibello@gmail.com', '+2348036967483', '$2y$10$iA4amEDQUAW7Z6LWf5bAJuwPxPm16is/lJPXidVfpbmcBHFslPqPq', 'Admin', 'Pending', '', '2026-01-10 12:44:34', '2026-01-11 12:51:46', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
+(34, 'IDRIS BELLO', 'idrisalibello@gmail.com', '+2348036967483', '$2y$10$wswx5neyEQoDNyeyxpbxnep1sxgGsyQeNmLiOMbO.e/Gg9BTARD76', 'Admin', 'Pending', '', '2026-01-10 12:44:34', '2026-03-02 15:06:38', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (35, 'Khadijah Ismail', 'luvlykhad@gmail.com', '+2348064684365', '$2y$10$MLdtvvhnEVk6KxoqNvYGte559X/U/lAFAlXIiTIOem9E7dj1AFuAq', 'Provider', 'Pending', '', '2026-01-11 11:51:20', '2026-01-30 07:59:17', 'active', 1, 'approved', 34, '2026-01-15 19:29:49', 'Home Services', 0, 'Kaduna', NULL, '2026-01-15 14:49:56', NULL),
 (36, 'Sumaya Ayuba', 'seamlesscallapp1@gmail.com', '+2348022222222', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Customer', 'Pending', '', '2026-01-12 10:20:35', '2026-01-15 20:24:28', 'active', 0, 'rejected', 34, '2026-01-15 19:30:32', '', 0, 'Kaduna', NULL, '2026-01-15 18:17:50', NULL),
 (37, 'Sumaya Ayuba', 'seamlesscallap@gmail.com', '+2348022222334', '$2y$10$2hEmC1qb/L2cp6mxaxXL1OtnmwAS5anZj86s.dAVovpQiREYsuzQe', 'Provider', 'Pending', '', '2026-01-12 10:20:35', '2026-01-12 10:20:35', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (38, 'Ismail Ali Bello', 'seammlesscallapp1@gmail.com', '+2348044444444', '$2y$10$zgn3k397wtXhx601lwmd/u5UtMCuoIxMcX/CmatO0XWuzpq9OOx/q', 'Admin', 'Pending', '', '2026-01-15 19:27:57', '2026-01-15 20:43:54', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
 (40, 'Aisha Abdullahi', 'seamlesscallapp@gmail.com', '+2348077777777', '$2y$10$O7b6KH5qYQsAl0sa/Eqv.ed7gXuuWQezVX86Xed001xUEgO3/ZQm.', 'Admin', 'Pending', '', '2026-01-15 19:48:09', '2026-01-15 19:48:09', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
-(41, 'Hafsat Salis', 'hs@gmail.com', '+2348034234321', '$2y$10$inQlO3UkYMo4MDs/YWafhepVgXnOFv8vYpTnSP.ylPbBqEReLlyui', 'Admin', 'Pending', '', '2026-01-18 12:32:11', '2026-01-18 12:32:11', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+(41, 'Hafsat Salis', 'hs@gmail.com', '+2348034234321', '$2y$10$inQlO3UkYMo4MDs/YWafhepVgXnOFv8vYpTnSP.ylPbBqEReLlyui', 'Admin', 'Pending', '', '2026-01-18 12:32:11', '2026-01-18 12:32:11', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL),
+(43, 'I Bello', 'i.bello@kadunapolytechnic.edu.ng', '+2349013040311', '$2y$10$5Yg.0yVioY6QDvgQ5B1IE.y7t/Otjrl0Yq7m7YXcL9ZYoEa0Q7KSG', 'Admin', 'Pending', '', '2026-03-09 16:05:17', '2026-03-09 16:05:17', 'active', 0, NULL, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -874,6 +1437,14 @@ CREATE TABLE `user_roles` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_roles`
+--
+
+INSERT INTO `user_roles` (`id`, `user_id`, `role_id`, `created_at`, `updated_at`) VALUES
+(1, 43, 1, '2026-03-09 17:37:04', '2026-03-09 17:37:04'),
+(2, 34, 3, '2026-03-14 14:31:55', '2026-03-14 14:31:55');
 
 -- --------------------------------------------------------
 
@@ -919,11 +1490,48 @@ ALTER TABLE `categories`
   ADD UNIQUE KEY `name` (`name`);
 
 --
+-- Indexes for table `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `customer_id` (`customer_id`),
+  ADD KEY `sender_role` (`sender_role`),
+  ADD KEY `created_at` (`created_at`),
+  ADD KEY `idx_conversation` (`conversation_id`);
+
+--
+-- Indexes for table `conversations`
+--
+ALTER TABLE `conversations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_participants` (`user_one_id`,`user_two_id`);
+
+--
+-- Indexes for table `coverages`
+--
+ALTER TABLE `coverages`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `coverage_rules`
+--
+ALTER TABLE `coverage_rules`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `earnings`
 --
 ALTER TABLE `earnings`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `earnings_provider_id_foreign` (`provider_id`);
+  ADD KEY `idx_earnings_commission_status` (`commission_status`),
+  ADD KEY `idx_earnings_provider_created` (`provider_id`,`created_at`);
+
+--
+-- Indexes for table `finance_settings`
+--
+ALTER TABLE `finance_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `key` (`key`);
 
 --
 -- Indexes for table `jobs`
@@ -933,6 +1541,17 @@ ALTER TABLE `jobs`
   ADD KEY `jobs_customer_id_foreign` (`customer_id`),
   ADD KEY `jobs_provider_id_foreign` (`provider_id`),
   ADD KEY `jobs_service_id_foreign` (`service_id`);
+
+--
+-- Indexes for table `job_payments`
+--
+ALTER TABLE `job_payments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `paystack_reference` (`paystack_reference`),
+  ADD KEY `job_id` (`job_id`),
+  ADD KEY `customer_id` (`customer_id`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `purpose` (`purpose`);
 
 --
 -- Indexes for table `ledger`
@@ -966,6 +1585,38 @@ ALTER TABLE `payouts`
 --
 ALTER TABLE `permissions`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `pricing_rules`
+--
+ALTER TABLE `pricing_rules`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `scope` (`scope`),
+  ADD KEY `status` (`status`),
+  ADD KEY `category_id` (`category_id`),
+  ADD KEY `service_id` (`service_id`);
+
+--
+-- Indexes for table `promotions`
+--
+ALTER TABLE `promotions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`),
+  ADD KEY `promotion_type` (`promotion_type`),
+  ADD KEY `status` (`status`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `provider_id` (`provider_id`),
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- Indexes for table `promotion_usages`
+--
+ALTER TABLE `promotion_usages`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `promotion_id_customer_id_job_id` (`promotion_id`,`customer_id`,`job_id`),
+  ADD KEY `promotion_id` (`promotion_id`),
+  ADD KEY `customer_id` (`customer_id`),
+  ADD KEY `job_id` (`job_id`);
 
 --
 -- Indexes for table `provider_disputes`
@@ -1017,6 +1668,24 @@ ALTER TABLE `services`
   ADD KEY `services_category_id_foreign` (`category_id`);
 
 --
+-- Indexes for table `service_pricing_adjustments`
+--
+ALTER TABLE `service_pricing_adjustments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `profile_id` (`profile_id`),
+  ADD KEY `status` (`status`),
+  ADD KEY `applies_phase` (`applies_phase`);
+
+--
+-- Indexes for table `service_pricing_profiles`
+--
+ALTER TABLE `service_pricing_profiles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `service_id` (`service_id`),
+  ADD KEY `status` (`status`),
+  ADD KEY `pricing_basis` (`pricing_basis`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -1047,43 +1716,79 @@ ALTER TABLE `verification_cases`
 -- AUTO_INCREMENT for table `activity_log`
 --
 ALTER TABLE `activity_log`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `chat_messages`
+--
+ALTER TABLE `chat_messages`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `conversations`
+--
+ALTER TABLE `conversations`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `coverages`
+--
+ALTER TABLE `coverages`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `coverage_rules`
+--
+ALTER TABLE `coverage_rules`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `earnings`
 --
 ALTER TABLE `earnings`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `finance_settings`
+--
+ALTER TABLE `finance_settings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `jobs`
 --
 ALTER TABLE `jobs`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `job_payments`
+--
+ALTER TABLE `job_payments`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `ledger`
 --
 ALTER TABLE `ledger`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT for table `otps`
 --
 ALTER TABLE `otps`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=383;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=503;
 
 --
 -- AUTO_INCREMENT for table `payouts`
@@ -1095,7 +1800,25 @@ ALTER TABLE `payouts`
 -- AUTO_INCREMENT for table `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+
+--
+-- AUTO_INCREMENT for table `pricing_rules`
+--
+ALTER TABLE `pricing_rules`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `promotions`
+--
+ALTER TABLE `promotions`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `promotion_usages`
+--
+ALTER TABLE `promotion_usages`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `provider_disputes`
@@ -1119,13 +1842,13 @@ ALTER TABLE `refunds`
 -- AUTO_INCREMENT for table `roles`
 --
 ALTER TABLE `roles`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `role_permissions`
 --
 ALTER TABLE `role_permissions`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=168;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -1134,16 +1857,28 @@ ALTER TABLE `services`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `service_pricing_adjustments`
+--
+ALTER TABLE `service_pricing_adjustments`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `service_pricing_profiles`
+--
+ALTER TABLE `service_pricing_profiles`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `user_roles`
 --
 ALTER TABLE `user_roles`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `verification_cases`
@@ -1192,6 +1927,13 @@ ALTER TABLE `otps`
 --
 ALTER TABLE `payouts`
   ADD CONSTRAINT `payouts_provider_id_foreign` FOREIGN KEY (`provider_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `pricing_rules`
+--
+ALTER TABLE `pricing_rules`
+  ADD CONSTRAINT `pricing_rules_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE ON UPDATE SET NULL,
+  ADD CONSTRAINT `pricing_rules_service_id_foreign` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE ON UPDATE SET NULL;
 
 --
 -- Constraints for table `provider_disputes`

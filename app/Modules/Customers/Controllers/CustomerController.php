@@ -709,9 +709,9 @@ class CustomerController extends BaseController
             return $this->failServerError('Paystack secret key is not configured.');
         }
 
-        $user = service('request')->auth_payload;
+        $user    = service('request')->auth_payload;
         $payload = (array) $this->request->getJSON(true);
-        $jobId = (int) ($payload['job_id'] ?? 0);
+        $jobId   = (int) ($payload['job_id'] ?? 0);
 
         if ($jobId <= 0) {
             return $this->failValidationErrors(['job_id' => 'Valid job_id is required.']);
@@ -732,10 +732,10 @@ class CustomerController extends BaseController
                 return $this->failNotFound('No active pricing profile found for this service.');
             }
 
-            $amount = (float) ($profile['inspection_fee'] ?? 0);
-            $currency = (string) ($profile['currency'] ?? 'NGN');
+            $originalAmount = (float) ($profile['inspection_fee'] ?? 0);
+            $currency       = (string) ($profile['currency'] ?? 'NGN');
 
-            if ($amount <= 0) {
+            if ($originalAmount <= 0) {
                 return $this->failValidationErrors([
                     'inspection_fee' => 'Inspection fee is not configured for this service.',
                 ]);
@@ -753,12 +753,40 @@ class CustomerController extends BaseController
                     'message' => 'Inspection fee is already paid.',
                     'data' => [
                         'already_paid' => true,
-                        'reference' => $existingSuccess['paystack_reference'] ?? null,
-                        'amount' => (float) $existingSuccess['amount'],
-                        'currency' => $existingSuccess['currency'] ?? $currency,
+                        'reference'    => $existingSuccess['paystack_reference'] ?? null,
+                        'amount'       => (float) $existingSuccess['amount'],
+                        'currency'     => $existingSuccess['currency'] ?? $currency,
                     ],
                 ]);
             }
+
+            // ── Promotion discount (optional) ──────────────────────────────
+            $promotionId     = isset($payload['promotion_id']) ? (int) $payload['promotion_id'] : null;
+            $discountApplied = 0.0;
+            $finalAmount     = $originalAmount;
+
+            if ($promotionId !== null && $promotionId > 0) {
+                $db    = \Config\Database::connect();
+                $promo = $db->table('promotions')
+                    ->where('id', $promotionId)
+                    ->where('status', 'active')
+                    ->get()
+                    ->getRowArray();
+
+                if ($promo) {
+                    [$discountApplied, $finalAmount] =
+                        \App\Modules\Customers\Controllers\PromotionValidationController::calculateDiscount(
+                            (string) $promo['discount_type'],
+                            (float)  $promo['discount_value'],
+                            $originalAmount
+                        );
+                } else {
+                    // Invalid promotion — ignore it, do not block payment
+                    $promotionId = null;
+                }
+            }
+
+            $amount = $finalAmount; // amount that will be charged
 
             $customer = $this->userModel->find((int) $user->id);
             if (!$customer || empty($customer['email'])) {
@@ -769,17 +797,25 @@ class CustomerController extends BaseController
 
             $reference = 'SCPAY-' . $jobId . '-' . time() . '-' . random_int(1000, 9999);
 
+            $metadata = [
+                'job_id'       => $jobId,
+                'customer_id'  => (int) $user->id,
+                'service_id'   => (int) $job['service_id'],
+                'purpose'      => 'inspection_fee',
+            ];
+
+            if ($promotionId !== null) {
+                $metadata['promotion_id']     = $promotionId;
+                $metadata['original_amount']  = $originalAmount;
+                $metadata['discount_applied'] = $discountApplied;
+            }
+
             $paystackPayload = [
-                'email' => $customer['email'],
-                'amount' => $this->amountToSubunit($amount, $currency),
+                'email'    => $customer['email'],
+                'amount'   => $this->amountToSubunit($amount, $currency),
                 'reference' => $reference,
                 'currency' => $currency,
-                'metadata' => [
-                    'job_id' => $jobId,
-                    'customer_id' => (int) $user->id,
-                    'service_id' => (int) $job['service_id'],
-                    'purpose' => 'inspection_fee',
-                ],
+                'metadata' => $metadata,
             ];
 
             $callbackUrl = $this->paystackCallbackUrl();
@@ -794,35 +830,59 @@ class CustomerController extends BaseController
             }
 
             $rowId = $this->jobPaymentModel->insert([
-                'job_id' => $jobId,
-                'customer_id' => (int) $user->id,
-                'service_id' => (int) $job['service_id'],
-                'provider_id' => $job['provider_id'] ?? null,
-                'purpose' => 'inspection_fee',
-                'amount' => $amount,
-                'currency' => $currency,
-                'gateway' => 'paystack',
-                'paystack_reference' => $reference,
+                'job_id'               => $jobId,
+                'customer_id'          => (int) $user->id,
+                'service_id'           => (int) $job['service_id'],
+                'provider_id'          => $job['provider_id'] ?? null,
+                'purpose'              => 'inspection_fee',
+                'amount'               => $amount,
+                'currency'             => $currency,
+                'gateway'              => 'paystack',
+                'paystack_reference'   => $reference,
                 'paystack_access_code' => $initResponse['data']['access_code'] ?? null,
-                'authorization_url' => $initResponse['data']['authorization_url'] ?? null,
-                'status' => 'initialized',
-                'gateway_message' => $initResponse['message'] ?? 'Payment initialized',
-                'metadata_json' => json_encode($paystackPayload['metadata'], JSON_UNESCAPED_UNICODE),
+                'authorization_url'    => $initResponse['data']['authorization_url'] ?? null,
+                'status'               => 'initialized',
+                'gateway_message'      => $initResponse['message'] ?? 'Payment initialized',
+                'metadata_json'        => json_encode($metadata, JSON_UNESCAPED_UNICODE),
             ], true);
 
             if (!$rowId) {
                 return $this->failServerError('Failed to save initialized payment.');
             }
 
+            // ── Record promotion usage ─────────────────────────────────────
+            if ($promotionId !== null && $discountApplied > 0) {
+                $db = \Config\Database::connect();
+                // Use INSERT IGNORE so duplicate-key on (promotion_id, customer_id, job_id)
+                // silently skips if already recorded (idempotent retries)
+                $db->query(
+                    'INSERT IGNORE INTO promotion_usages
+                        (promotion_id, customer_id, job_id, payment_id,
+                         original_amount, discount_applied, final_amount, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+                    [
+                        $promotionId,
+                        (int) $user->id,
+                        $jobId,
+                        (int) $rowId,
+                        $originalAmount,
+                        $discountApplied,
+                        $amount,
+                    ]
+                );
+            }
+
             return $this->respondCreated([
                 'message' => 'Inspection payment initialized successfully.',
-                'data' => [
-                    'job_id' => $jobId,
-                    'reference' => $reference,
-                    'amount' => $amount,
-                    'currency' => $currency,
+                'data'    => [
+                    'job_id'           => $jobId,
+                    'reference'        => $reference,
+                    'original_amount'  => $originalAmount,
+                    'discount_applied' => $discountApplied,
+                    'amount'           => $amount,
+                    'currency'         => $currency,
                     'authorization_url' => $initResponse['data']['authorization_url'],
-                    'access_code' => $initResponse['data']['access_code'] ?? null,
+                    'access_code'      => $initResponse['data']['access_code'] ?? null,
                 ],
             ]);
         } catch (Exception $e) {

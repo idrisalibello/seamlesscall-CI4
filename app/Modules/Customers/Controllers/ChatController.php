@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Modules\Chat\Controllers;
+namespace App\Modules\Customers\Controllers;
 
 use App\Controllers\BaseController;
-use App\Modules\Chat\Models\ChatMessageModel;
+use App\Modules\Customers\Models\ChatMessageModel;
 use CodeIgniter\API\ResponseTrait;
 use Exception;
 

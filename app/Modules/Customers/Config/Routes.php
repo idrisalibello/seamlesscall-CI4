@@ -14,12 +14,20 @@ $routes->group('api/v1/customer', [
     $routes->get('categories/(:num)/services', 'CustomerController::getServicesByCategory/$1');
     $routes->get('services/(:num)', 'CustomerController::getServiceDetails/$1');
 
+    // Popular services — ranked by bookings, ratings, views
+    $routes->get('services/popular', 'PopularServicesController::index');
+    // View tracking — called when customer opens a service detail screen
+    $routes->post('services/(:num)/view', 'PopularServicesController::recordView/$1');
+
     $routes->post('bookings', 'CustomerController::createBooking');
     $routes->get('bookings', 'CustomerController::getMyBookings');
     $routes->get('bookings/(:num)', 'CustomerController::getBookingDetails/$1');
 
     $routes->post('payments/initialize', 'CustomerController::initializeInspectionPayment');
     $routes->get('payments/verify/(:segment)', 'CustomerController::verifyPayment/$1');
+
+    // Promotion validation — called from booking summary screen
+    $routes->post('promotions/validate', 'PromotionValidationController::validate');
 });
 
 $routes->post('api/v1/paystack/webhook', 'CustomerController::paystackWebhook', [
