@@ -17,6 +17,11 @@ $routes->group('api/v1/admin', [
     $routes->get('providers/(:num)/earnings', 'AdminController::getProviderEarnings/$1');
     $routes->get('providers/(:num)/payouts', 'AdminController::getProviderPayouts/$1');
 
+    // Support chat
+    $routes->get('chat/conversations', 'AdminChatController::conversations');
+    $routes->get('chat/conversations/(:num)/messages', 'AdminChatController::messages/$1');
+    $routes->post('chat/conversations/(:num)/messages', 'AdminChatController::sendMessage/$1');
+
     // Provider Performance, Ratings, and Disputes
     $routes->get('providers/performance', 'ProviderPerformanceController::getOverallProviderPerformance');
     $routes->get('providers/(:num)/performance', 'ProviderPerformanceController::getProviderPerformance/$1');

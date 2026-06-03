@@ -194,6 +194,7 @@ class ChatController extends BaseController
         }
 
         $insertData = [
+            'conversation_id' => 0,
             'customer_id'  => $customerId,
             'sender_role'  => $senderRole,
             'sender_id'    => $senderId,
@@ -285,6 +286,7 @@ class ChatController extends BaseController
             $messageType = str_starts_with($file->getMimeType(), 'image/') ? 'image' : 'file';
 
             $insertData = [
+                'conversation_id' => 0,
                 'customer_id'     => $customerId,
                 'sender_role'     => $senderRole,
                 'sender_id'       => $senderId,
